@@ -32,7 +32,7 @@ def register():
 				print("'%s' 已存在，请重新输入！" % user)
 				continue
 			elif len(password) < 6 or password_chack == []:    # 判断密码是否大于6个和是否带有英文字母
-				print("密码太弱，请输入6位以上的并且有一个英文字母")
+				print("密码太弱，请输入6位以上的并且至少有一个英文字母")
 			elif mail in mail_list:     # 判断有没有被其他用户输入过
 				print("此邮箱已注册！")
 			elif mail_split[-1] not in mail_gesi:   # 判断邮箱格式
