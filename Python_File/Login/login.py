@@ -1,6 +1,6 @@
 # -*- codint: utf-8 -*-
 
-import json
+import json,getpass
 from registered import *
 from Find_password import *
 
@@ -12,7 +12,7 @@ while True:
 	with open("date.txt","r") as f:
 		user_date = json.load(f)
 		user = str(input("User Name: "))
-		password = str(input("Password: "))
+		password = getpass.getpass("Password: ")
 		save_md5 = get_md5(user,password)
 		if user not in user_date:
 			print("用户名: '%s' 不存在，请注册！" % user)

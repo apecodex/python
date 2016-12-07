@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 
-import hashlib,json
+import hashlib,json,re,getpass
 
 
 
@@ -23,11 +23,14 @@ def register():
 		while True:
 			mail_list = [x for x in find_password.values()]    # 获取之前用户输入过的所有邮箱
 			user = str(input("New User: "))
-			password = str(input("Password: "))
+			if user == 'q':
+				break
+			password = getpass.getpass("Password: ")
 			password_chack = [i for i in password if i.isalpha()]    # 判断 password 中是否有英文字母
 			mail = str(input("Mail: "))
 			save_md5 = get_md5(user,password)    # 将用户输入的密码加密
 			mail_split = mail.split("@")
+			mail_re = re.findall(r"[^a-z0-9]+",mail_split[0])
 			if user in user_date:
 				print("'%s' 已存在，请重新输入！" % user)
 				continue
@@ -35,8 +38,9 @@ def register():
 				print("密码太弱，请输入6位以上的并且至少有一个英文字母")
 			elif mail in mail_list:     # 判断有没有被其他用户输入过
 				print("此邮箱已注册！")
-			elif mail_split[-1] not in mail_gesi:   # 判断邮箱格式
-				print("请输入正确的邮箱") 
+			elif mail_re != [] or mail_split[-1] not in mail_gesi:   # 判断邮箱格式
+				print("请输入正确的邮箱")
+				print("输入'q'可退出注册")
 			else:
 				user_date[user]=save_md5
 				find_password[user]=mail

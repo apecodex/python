@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import json
+import json,getpass
 from registered import *
 
 def Find_password():
@@ -13,8 +13,8 @@ def Find_password():
 			mail = str(input("Mail: "))
 			if user in mail_date and mail == mail_date[user]:
 				while True:
-					new_password = str(input("New Password: "))
-					enter_password = str(input("Enter Password: "))
+					new_password = getpass.getpass("New Password")
+					enter_password = getpass.getpass("Enter Password: ")
 					if new_password == enter_password:
 						get_new_md5 = get_md5(user,new_password)
 						user_date[user]=get_new_md5
