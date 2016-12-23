@@ -3,6 +3,7 @@
 import urllib.request
 from bs4 import BeautifulSoup
 import os
+import urllib.error
 
 def Replace(url):
     url = url.replace("mvideo","svideo")
