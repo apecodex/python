@@ -50,70 +50,118 @@ def video():
         time+=1
 
 def img():
-	time = 1
-	while True:
-		url = "http://www.budejie.com/pic/"+str(time)
-		headers = {"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"}
-		url_Request = urllib.request.Request(url,headers=headers)
-		try:
-			url_open = urllib.request.urlopen(url_Request)
-		except urllib.error.HTTPError as f:
-			print("页面没有找到",f.code)
-		url_soup = BeautifulSoup(url_open.read().decode("utf-8"),'lxml')
-		try:
-			url_div = url_soup.find("div",class_="j-r-list").find_all("img")
-		except AttributeError as e:
-			print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
-		url_img = []
-		url_name = []
-		for i in url_div:
-			url_img.append(i["data-original"])
-			url_name.append(i["alt"])
-		url_reght = []
-		a = [".gif",".png",".jpg"]
-		for i in url_img:
-			if i[-4:] in a:
-				url_reght.append(i)
-		url_name_split = []
-		for name_split in url_name:
-			url_name_split.append(name_split.split("，"))
-		print("--------------------------------")
-		print("正在下载第 %s 页" % time)
-		for download in zip(url_name_split,url_reght):
-			img_Re = urllib.request.Request(download[1],headers=headers)
-			img_open = urllib.request.urlopen(img_Re)
-			print("Download... %s" % download[0][0])
-			urllib.request.urlretrieve(download[1],"baisibudeqijie_img//%s" % (download[0][0]+"."+download[1][-4:]))
-			print("%s download complite!" % download[0][0])
-		print("第 %s 页已经下载完成" % time)
-		time+=1
+    time = 1
+    while True:
+        url = "http://www.budejie.com/pic/"+str(time)
+        headers = {"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"}
+        url_Request = urllib.request.Request(url,headers=headers)
+        try:
+            url_open = urllib.request.urlopen(url_Request)
+        except urllib.error.HTTPError as f:
+            print("页面没有找到",f.code)
+        url_soup = BeautifulSoup(url_open.read().decode("utf-8"),'lxml')
+        try:
+            url_div = url_soup.find("div",class_="j-r-list").find_all("img")
+        except AttributeError as e:
+            print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
+        url_img = []
+        url_name = []
+        for i in url_div:
+            url_img.append(i["data-original"])
+            url_name.append(i["alt"])
+        url_reght = []
+        a = [".gif",".png",".jpg"]
+        for i in url_img:
+            if i[-4:] in a:
+                url_reght.append(i)
+        url_name_split = []
+        for name_split in url_name:
+            url_name_split.append(name_split.split("，"))
+        print("--------------------------------")
+        print("正在下载第 %s 页" % time)
+        for download in zip(url_name_split,url_reght):
+            img_Re = urllib.request.Request(download[1],headers=headers)
+            img_open = urllib.request.urlopen(img_Re)
+            print("Download... %s" % download[0][0])
+            urllib.request.urlretrieve(download[1],"baisibudeqijie_img//%s" % (download[0][0]+"."+download[1][-4:]))
+            print("%s download complite!" % download[0][0])
+        print("第 %s 页已经下载完成" % time)
+        time+=1
+
+def text():
+    time = 1
+    while True:
+        url = "http://www.budejie.com/text/"+str(time)
+        headers = {"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36"}
+        url_Request = urllib.request.Request(url,headers=headers)
+        try:
+            url_open = urllib.request.urlopen(url_Request)
+        except urllib.error.HTTPError as f:
+            print("页面没有找到",f.code)
+        url_soup = BeautifulSoup(url_open.read().decode("utf-8"),'lxml')
+        try:
+            url_text = url_soup.find("div",class_="j-r-c").find_all("div",class_="j-r-list-c-desc")
+            url_name = url_soup.find("div",class_="j-r-c").find_all("div",class_="u-txt")
+        except AttributeError as e:
+            print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
+        text = []
+        name = []
+        name_split= []
+        for x in url_name:
+            name.append(x.get_text())
+        for i in url_text:
+            text.append(i.get_text())
+        for name_splits in name:
+            splits = name_splits.split(" ")
+            name_split.append(splits)
+        print("-------------------------------")
+        print("正在下载第 %s 页" % time)
+        for download in zip(name_split,text):
+            print("Download... %s" % download[0][0])
+            with open("baisibudeqijie_text//%s" % (download[0][0]+download[0][1]+download[0][2]+".txt"),"w") as f:
+                f.write(download[1])
+            print("%s Download complite" % download[0][0])
+        print("第 %s 页已经下载完成" % time)
+        print("-------------------------------")
+        time+=1
 
 
 print("--------------------------------")
 print("| 1.video                      |")
 print("| 2.img                        |")
+print("| 3.text                       |")
 print("--------------------------------")
 user = input("请选择1 or 2: ")
 
 if user == "1":
-	print("正在获取页面...")
-	try:
-		os.mkdir("baisibudeqijie_video")
-		if os.path.exists("baisibudeqijie_video"):
-			os.rmdir("baisibudeqijie_video")
-			os.mkdir("baisibudeqijie_video")
-	except FileExistsError:
-		pass
-	video()
+    print("正在获取页面...")
+    try:
+        os.mkdir("baisibudeqijie_video")
+        if os.path.exists("baisibudeqijie_video"):
+            os.rmdir("baisibudeqijie_video")
+            os.mkdir("baisibudeqijie_video")
+    except FileExistsError:
+        pass
+    video()
 elif user == "2":
-	print("正在获取页面...")
-	try:
-		os.mkdir("baisibudeqijie_img")
-		if os.path.exists("baisibudeqijie_img"):
-			os.rmdir("baisibudeqijie_img")
-			os.mkdir("baisibudeqijie_img")
-	except FileExistsError:
-		pass
-	img()
+    print("正在获取页面...")
+    try:
+        os.mkdir("baisibudeqijie_img")
+        if os.path.exists("baisibudeqijie_img"):
+            os.rmdir("baisibudeqijie_img")
+            os.mkdir("baisibudeqijie_img")
+    except FileExistsError:
+        pass
+    img()
+elif user == "3":
+    print("正在获取页面...")
+    try:
+        os.mkdir("baisibudeqijie_text")
+        if os.path.exists("baisibudeqijie_text"):
+            os.rmdir("baisibudeqijie_text")
+            os.mkdir("baisibudeqijie_text")
+    except FileExistsError:
+        pass
+    text()
 else:
-	print("抱歉,选项里没有 '%s'" % user)
+    print("抱歉,选项里没有 '%s'" % user)
