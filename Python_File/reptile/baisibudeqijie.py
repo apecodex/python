@@ -254,7 +254,7 @@ print("| 3.text                       |")
 print("| 4.audio                      |")
 print("| 5.peri                       |")
 print("--------------------------------")
-user = input("请选择1-2-3-4: ")
+user = input("请选择1-2-3-4-5: ")
 
 if user == "1":
     print("正在获取页面...")
