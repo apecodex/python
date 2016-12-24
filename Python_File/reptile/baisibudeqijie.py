@@ -28,9 +28,9 @@ def video():
         except AttributeError as f:
             print("已经爬完了...这个网站页面不多~不信自己翻一翻")
             break
-        name = []
-        div = []
-        replace_name = []
+        name = []  #用来储存视频的名字
+        div = []   # 用来储存视频的地址
+        replace_name = []   # 将视频名字中的一些特殊字符换掉
         for i in url_name:
             name.append(i["data-text"])
         for z in name:
@@ -64,17 +64,17 @@ def img():
             url_div = url_soup.find("div",class_="j-r-list").find_all("img")
         except AttributeError as e:
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
-        url_img = []
-        url_name = []
+        url_img = []   # 图片的地址
+        url_name = []   # 图片的名字
         for i in url_div:
             url_img.append(i["data-original"])
             url_name.append(i["alt"])
-        url_reght = []
+        url_reght = []  # 这个网站的图片会有一些不是图片的链接出现，没有后缀的~下载下来也没用，把它去掉
         a = [".gif",".png",".jpg"]
         for i in url_img:
             if i[-4:] in a:
                 url_reght.append(i)
-        url_name_split = []
+        url_name_split = []  # 因为字符串太长，储存的时候会报错，就截取'，'前面第一个
         for name_split in url_name:
             url_name_split.append(name_split.split("，"))
         print("--------------------------------")
@@ -104,9 +104,9 @@ def text():
             url_name = url_soup.find("div",class_="j-r-c").find_all("div",class_="u-txt")
         except AttributeError as e:
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
-        text = []
-        name = []
-        name_split= []
+        text = []  # 段子
+        name = []  # 发送人的用户名
+        name_split= []  # 用户名的格式是用户名+时间，把它两个分开
         for x in url_name:
             name.append(x.get_text())
         for i in url_text:
@@ -136,7 +136,7 @@ user = input("请选择1 or 2: ")
 if user == "1":
     print("正在获取页面...")
     try:
-        os.mkdir("baisibudeqijie_video")
+        os.mkdir("baisibudeqijie_video")              # 这里就是先创建，如果存在就删除，然后重新创建
         if os.path.exists("baisibudeqijie_video"):
             os.rmdir("baisibudeqijie_video")
             os.mkdir("baisibudeqijie_video")
