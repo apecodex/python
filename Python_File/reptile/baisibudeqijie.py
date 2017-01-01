@@ -209,6 +209,9 @@ def audio():
                     print("%s Download complite!" % download[0])
                 except OSError as o:
                     print("文件出错啦~可能是有特殊符号~也有可能是链接消失啦~这张就下载不了啦~",o)
+            except UnicodeEncodeError as u:
+                print("你用的可能是windows系统吧~这里报错“GBK”了~用Linux系统吧~")
+                print("或者在cmd窗口下输入: chcp 65001 就可以改成'utf-8'了",u)
             except urllib.error.HTTPError as f:
                 print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
