@@ -46,6 +46,8 @@ def video():
                 print("Downloading... %s" % z[0])
                 urllib.request.urlretrieve(z[1],"baisibudeqijie_video//%s.mp4" % z[0])
                 print("%s Download complite!" % z[0])
+            except urllib.error.HTTPError as f:
+                print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
                 print("视频链接没有找到,可能被删除了吧～",e)
                 pass
@@ -85,11 +87,11 @@ def img():
         print("正在下载第 %s 页" % time)
         for download in zip(url_name_split,url_reght):
             try:
-                img_Re = urllib.request.Request(download[1],headers=headers)
-                img_open = urllib.request.urlopen(img_Re)
                 print("Download... %s" % download[0][0])
                 urllib.request.urlretrieve(download[1],"baisibudeqijie_img//%s" % (download[0][0]+download[1][-5:]))
                 print("%s download complite!" % download[0][0])
+            except urllib.error.HTTPError as f:
+                print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
                 print("图片链接没有找到,可能是被删除了吧～",e)
                 pass
@@ -115,27 +117,33 @@ def text():
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
         text = []  # 段子
         name = []  # 发送人的用户名
-        name_split= []  # 用户名的格式是用户名+时间，把它两个分开
+        name_replace = []  # 去掉"\n"
+        name_split = [] # 用户名的格式是用户名+时间，把它两个分开
         for x in url_name:
             name.append(x.get_text())
         for i in url_text:
             text.append(i.get_text())
         for name_splits in name:
-            splits = name_splits.split(" ")
-            name_split.append(splits)
+            splits = name_splits.replace("\n","")
+            name_replace.append(splits)
+        for i in name_replace:
+            name_split.append(i.split(" "))
         print("-------------------------------")
         print("正在下载第 %s 页" % time)
         for download in zip(name_split,text):
             try:
                 print("Download... %s" % download[0][0])
-                with open("baisibudeqijie_text//%s" % (download[0][0]+download[0][1]+download[0][2]+".txt"),"w") as f:
+                with open("baisibudeqijie_text//%s" % (download[0][0]+".txt"),"w") as f:
                     f.write(download[1])
                 print("%s Download complite" % download[0][0])
+            except urllib.error.HTTPError as f:
+                print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
                 print("段子没有找到，可能是被删除了吧～",e)
         print("第 %s 页已经下载完成" % time)
         print("-------------------------------")
         time+=1
+
 
 def audio():
     time = 1
@@ -180,6 +188,8 @@ def audio():
                 print("Download... %s" % download[0])
                 urllib.request.urlretrieve(download[1],"baisibudeqijie_audio//%s" % (download[0]+".mp3"))
                 print("%s Download complite!" % download[0])
+            except urllib.error.HTTPError as f:
+                print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
                 print("没有找到,可能是被删除了吧～",e)
                 pass
@@ -230,6 +240,8 @@ def peri():
                 print("Download... %s" % download[0])
                 urllib.request.urlretrieve(download[1],"baisibudeqijie_peri//baisibudeqijie_peri_img//%s" % (download[0]+"."+download[1][-4:]))
                 print("%s Download complite!" % download[0])
+            except urllib.error.HTTPError as f:
+                print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
                 print("图片链接没有找到，可能是被删除了吧～",e)
                 pass
@@ -245,6 +257,8 @@ def peri():
                 print("Download... %s" % downloads[0])
                 urllib.request.urlretrieve(downloads[1],"baisibudeqijie_peri//baisibudeqijie_peri_video//%s" % (downloads[0]+"."+downloads[1][-4:]))
                 print("%s Download complite!" % downloads[0])
+            except urllib.error.HTTPError as f:
+                print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
                 print("视频链接没有找到，可能是被删除了吧～",e)
                 pass
@@ -262,7 +276,7 @@ print("| 3.text                       |")
 print("| 4.audio                      |")
 print("| 5.peri                       |")
 print("--------------------------------")
-user = input("请选择1-2-3-4: ")
+user = input("请选择1-2-3-4-5: ")
 
 if user == "1":
     print("正在获取页面...")
