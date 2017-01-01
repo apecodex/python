@@ -44,8 +44,14 @@ def video():
         for z in zip(replace_name,div):
             try:
                 print("Downloading... %s" % z[0])
-                urllib.request.urlretrieve(z[1],"baisibudeqijie_video//%s.mp4" % z[0])
-                print("%s Download complite!" % z[0])
+                try:
+                    urllib.request.urlretrieve(z[1],"baisibudeqijie_video//%s.mp4" % z[0])
+                    print("%s Download complite!" % z[0])
+                except OSError as o:
+                    print("文件出错啦~可能是有特殊符号~也有可能是链接消失啦~这张就下载不了啦~",o)
+            except UnicodeEncodeError as u:
+                print("你用的可能是windows系统吧~这里报错“GBK”了~用Linux系统吧~")
+                print("或者在cmd窗口下输入: chcp 65001 就可以改成'utf-8'了")
             except urllib.error.HTTPError as f:
                 print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
@@ -88,8 +94,14 @@ def img():
         for download in zip(url_name_split,url_reght):
             try:
                 print("Download... %s" % download[0][0])
-                urllib.request.urlretrieve(download[1],"baisibudeqijie_img//%s" % (download[0][0]+download[1][-5:]))
+                try:
+                    urllib.request.urlretrieve(download[1],"baisibudeqijie_img//%s" % (download[0][0]+download[1][-5:]))
+                except OSError as o:
+                    print("文件出错啦~可能是有特殊符号~也有可能是链接消失啦~这张就下载不了啦~",o)
                 print("%s download complite!" % download[0][0])
+            except UnicodeEncodeError as u:
+                print("你用的可能是windows系统吧~这里报错“GBK”了~用Linux系统吧~")
+                print("或者在cmd窗口下输入: chcp 65001 就可以改成'utf-8'了")
             except urllib.error.HTTPError as f:
                 print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
@@ -98,6 +110,7 @@ def img():
         print("第 %s 页已经下载完成" % time)
         print("--------------------------------")
         time+=1
+
 
 def text():
     time = 1
@@ -117,8 +130,8 @@ def text():
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
         text = []  # 段子
         name = []  # 发送人的用户名
-        name_replace = []  # 去掉"\n"
-        name_split = [] # 用户名的格式是用户名+时间，把它两个分开
+        name_replace = []  # 用户名的格式是用户名+时间，把它两个分开
+        name_split = []
         for x in url_name:
             name.append(x.get_text())
         for i in url_text:
@@ -134,7 +147,11 @@ def text():
             try:
                 print("Download... %s" % download[0][0])
                 with open("baisibudeqijie_text//%s" % (download[0][0]+".txt"),"w") as f:
-                    f.write(download[1])
+                    try:
+                        f.write(download[1])
+                    except UnicodeEncodeError as u:
+                        print("你用的可能是windows系统吧~这里报错“GBK”了~用Linux系统吧~")
+                        print("或者在cmd窗口下输入: chcp 65001 就可以改成'utf-8'了")
                 print("%s Download complite" % download[0][0])
             except urllib.error.HTTPError as f:
                 print("图片链接没有找到,可能是被删除了吧～",f.code)
@@ -143,6 +160,7 @@ def text():
         print("第 %s 页已经下载完成" % time)
         print("-------------------------------")
         time+=1
+
 
 
 def audio():
@@ -186,8 +204,11 @@ def audio():
         for download in zip(audio_relpace_r,audio_link):
             try:
                 print("Download... %s" % download[0])
-                urllib.request.urlretrieve(download[1],"baisibudeqijie_audio//%s" % (download[0]+".mp3"))
-                print("%s Download complite!" % download[0])
+                try:
+                    urllib.request.urlretrieve(download[1],"baisibudeqijie_audio//%s" % (download[0]+".mp3"))
+                    print("%s Download complite!" % download[0])
+                except OSError as o:
+                    print("文件出错啦~可能是有特殊符号~也有可能是链接消失啦~这张就下载不了啦~",o)
             except urllib.error.HTTPError as f:
                 print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
@@ -238,8 +259,11 @@ def peri():
         for download in zip(img_name,img_link):
             try:
                 print("Download... %s" % download[0])
-                urllib.request.urlretrieve(download[1],"baisibudeqijie_peri//baisibudeqijie_peri_img//%s" % (download[0]+"."+download[1][-4:]))
-                print("%s Download complite!" % download[0])
+                try:
+                    urllib.request.urlretrieve(download[1],"baisibudeqijie_peri//baisibudeqijie_peri_img//%s" % (download[0]+"."+download[1][-4:]))
+                    print("%s Download complite!" % download[0])
+                except OSError as o:
+                    print("文件出错啦~可能是有特殊符号~也有可能是链接消失啦~这张就下载不了啦~",o)
             except urllib.error.HTTPError as f:
                 print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
@@ -255,8 +279,11 @@ def peri():
         for downloads in zip(video_name_split[0],video_link):
             try:
                 print("Download... %s" % downloads[0])
-                urllib.request.urlretrieve(downloads[1],"baisibudeqijie_peri//baisibudeqijie_peri_video//%s" % (downloads[0]+"."+downloads[1][-4:]))
-                print("%s Download complite!" % downloads[0])
+                try:
+                    urllib.request.urlretrieve(downloads[1],"baisibudeqijie_peri//baisibudeqijie_peri_video//%s" % (downloads[0]+"."+downloads[1][-4:]))
+                    print("%s Download complite!" % downloads[0])
+                except OSError as o:
+                    print("文件出错啦~可能是有特殊符号~也有可能是链接消失啦~这张就下载不了啦~",o)
             except urllib.error.HTTPError as f:
                 print("图片链接没有找到,可能是被删除了吧～",f.code)
             except FileNotFoundError as e:
