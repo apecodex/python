@@ -92,6 +92,7 @@ def img():
             img_name.append(i.get_text())
         for x in img_name:
             img_name_replace.append(x.replace("\n",""))
+        print("------------------------------------")
         print("正在下载第 %s 页" % time)
         for download in zip(img_name_replace,img_link):
             try:
