@@ -73,32 +73,34 @@ def img():
             print("页面没有找到",f.code)
         url_soup = BeautifulSoup(url_open.read().decode("utf-8"),'lxml')
         try:
-            url_div = url_soup.find("div",class_="j-r-list").find_all("img")
+            url_div = url_soup.find("div",class_="j-r-c").find_all("img")
+            url_name = url_soup.find("div",class_="j-r-c").find_all("div",class_="j-r-list-c-desc")
         except AttributeError as e:
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
         url_img = []   # 图片的地址
-        url_name = []   # 图片的名字
-        for i in url_div:
-            url_img.append(i["data-original"])
-            url_name.append(i["alt"])
-        url_reght = []   # 这个网站的图片会有一些不是图片的链接出现，没有后缀的~下载下来也没用，把它去掉
+        img_name = []   # 图片的名字
+        img_link = []   # 图片地址有错误的链接~筛选掉
+        img_name_replace = []  # 名字有"\n"得去掉
         a = [".gif",".png",".jpg"]
+        for i in url_div:
+            if i["data-original"][-4:] in a:
+                url_img.append(i["data-original"])
         for i in url_img:
-            if i[-4:] in a:
-                url_reght.append(i)
-        url_name_split = []    # 因为字符串太长，储存的时候会报错，就截取'，'前面第一个
-        for name_split in url_name:
-            url_name_split.append(name_split.split("，"))
-        print("--------------------------------")
+            if i.split("/")[3] != "profile":
+                img_link.append(i)
+        for i in url_name:
+            img_name.append(i.get_text())
+        for x in img_name:
+            img_name_replace.append(x.replace("\n",""))
         print("正在下载第 %s 页" % time)
-        for download in zip(url_name_split,url_reght):
+        for download in zip(img_name_replace,img_link):
             try:
-                print("Download... %s" % download[0][0])
+                print("Download... %s" % download[0])
                 try:
-                    urllib.request.urlretrieve(download[1],"baisibudeqijie_img//%s" % (download[0][0]+download[1][-5:]))
+                    urllib.request.urlretrieve(download[1],"baisibudeqijie_img//%s" % (download[0][0:20]+download[1][-5:]))
                 except OSError as o:
                     print("文件出错啦~可能是有特殊符号~也有可能是链接消失啦~这张就下载不了啦~",o)
-                print("%s download complite!" % download[0][0])
+                print("%s download complite!" % download[0])
             except UnicodeEncodeError as u:
                 print("你用的可能是windows系统吧~这里报错“GBK”了~用Linux系统吧~")
                 print("或者在cmd窗口下输入: chcp 65001 就可以改成'utf-8'了")
