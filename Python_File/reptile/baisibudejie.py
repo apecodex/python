@@ -77,6 +77,7 @@ def img():
             url_name = url_soup.find("div",class_="j-r-c").find_all("div",class_="j-r-list-c-desc")
         except AttributeError as e:
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
+            break
         url_img = []   # 图片的地址
         img_name = []   # 图片的名字
         img_link = []   # 图片地址有错误的链接~筛选掉
@@ -131,6 +132,7 @@ def text():
             url_name = url_soup.find("div",class_="j-r-c").find_all("div",class_="u-txt")
         except AttributeError as e:
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
+            break
         text = []  # 段子
         name = []  # 发送人的用户名
         name_replace = []  # 用户名的格式是用户名+时间，把它两个分开
@@ -182,7 +184,7 @@ def audio():
             url_name = url_soup.find("div",class_="j-r-c").find_all("div",class_="j-r-list-c-desc")
         except AttributeError as e:
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
-
+            break
         audio_link = []   # audio的链接
         audio_name = []   # audio的名字
         audio_split = []    # 名字太长会报错，分开
@@ -241,7 +243,7 @@ def peri():
             url_video_name = url_soup.find_all("li",class_="j-r-list-tool-l-down f-tar j-down-video j-down-hide ipad-hide")
         except AttributeError as e:
             print("已经爬完了，这个网页的页面不多～不信自己翻一翻")
-
+            break
         img_link = []    # 图片的链接
         img_name = []    # 图片的名字
         video_link = []    # 视频的链接
