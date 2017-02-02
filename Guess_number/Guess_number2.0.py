@@ -720,7 +720,9 @@ if __name__ == "__main__":
     print("游戏开始前请登录或者注册！")
     try:
         os.mkdir("game_date")
+        open("game_date/root.txt",'w')
         os.mkdir("root_date")
+        open("root_date/root.txt",'w')
     except FileExistsError:
         pass
     start_Game = input("1~2~3 ")
