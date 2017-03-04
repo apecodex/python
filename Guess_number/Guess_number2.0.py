@@ -47,7 +47,9 @@ class Register:
                 password_chack = [i for i in new_password if i.isalpha()]   # 检查密码里面有没有带字母，没有就是[]空list
                 mail_split = new_mail.split("@")      # 将邮箱拆成两半
                 mail_re = re.findall(r'[^a-z0-9]+',mail_split[0])     # 匹配,有数字和字母都ok,其他都不要
-                if new_password != again_password:    # 判断两次的密码是否相同
+                if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:   # 用户名中不能有空格
+                    print("用户名中不能包含空格")
+                elif new_password != again_password:    # 判断两次的密码是否相同
                     print("两次密码不相同,请重新输入!")
                     continue
                 elif new_name in user_name:    # 检查 新的用户名有没有在本地数据库中
@@ -193,7 +195,7 @@ class Register:
                                 break
                             else:
                                 print("抱歉，选项中没有 '%s'" % user_input)
-                                break
+                                continue
                             break
                     else:
                         print("帐号或密码错误，是否找回密码？(y/n)")
@@ -618,7 +620,9 @@ def Root():
                         password_chack = [i for i in new_password if i.isalpha()]  # 检查密码里面有没有带字母，没有就是[]空list
                         mail_split = root_mails.split("@")  # 将邮箱拆成两半
                         mail_re = re.findall(r'[^a-z0-9]+', mail_split[0])  # 匹配,有数字和字母都ok,其他都不要
-                        if new_password != again_password:  # 判断两次的密码是否相同
+                        if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:
+                            print("用户名中不能包含空格!")
+                        elif new_password != again_password:  # 判断两次的密码是否相同
                             print("两次密码不相同,请重新输入!")
                             continue
                         elif new_name in root_name and new_name in user_name:  # 检查 新的用户名有没有在本地数据库中
