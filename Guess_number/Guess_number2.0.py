@@ -423,6 +423,12 @@ def must_root(name):
         root_user2 = json.load(f1)
         print("管理员登录只有一次机会！帐号或密码错误则直接退出")
         while True:
+            with open("user_date.txt",'r') as f:
+                root_user = json.load(f)
+            with open("user_mail.txt",'r') as m:
+                root_mail = json.load(m)
+            with open("root.txt",'r') as f1:
+                root_user2 = json.load(f1)
             print("亲爱的管理员'{}',菜单如下:".format(name))
             print("--------------------")
             print("| 1.删除用户         |")
@@ -515,6 +521,14 @@ def Root():
         if root == "root" and mail == root_mail2[root] and root_md5 == root_user2[root]:
             print("登录成功！欢迎您! 超级管理员:{}".format(root))
             while True:
+                with open("user_date.txt",'r') as f:
+                    root_user = json.load(f)
+                with open("user_mail.txt",'r') as m:
+                    root_mail = json.load(m)
+                with open("root.txt",'r') as f1:
+                    root_user2 = json.load(f1)
+                with open("root_mail.txt",'r') as m1:
+                    root_mail2 = json.load(m1)
                 print("亲爱的{},菜单如下".format(root))
                 print("--------------------")
                 print("| 1.删除用户        |")
