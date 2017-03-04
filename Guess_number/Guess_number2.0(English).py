@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+        # -*- coding: utf-8 -*-
 
 import json
 import hashlib
@@ -47,7 +47,9 @@ class Register:
                 password_chack = [i for i in new_password if i.isalpha()]   # 检查密码里面有没有带字母，没有就是[]空list
                 mail_split = new_mail.split("@")      # 将邮箱拆成两半
                 mail_re = re.findall(r'[^a-z0-9]+',mail_split[0])     # 匹配,有数字和字母都ok,其他都不要
-                if new_password != again_password:    # 判断两次的密码是否相同
+                if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:  # 用户名中不能有空格
+                    print("user name not have strip")
+                elif new_password != again_password:    # 判断两次的密码是否相同
                     print("Twice the password is not the same, please re-enter!")
                     continue
                 elif new_name in user_name:    # 检查 新的用户名有没有在本地数据库中
@@ -194,7 +196,7 @@ class Register:
                                 break
                             else:
                                 print("Sorry, there is no option '%s'" % user_input)
-                                break
+                                continue
                             break
                     else:
                         print("Account or password error, whether to retrieve the password？(y/n)")
@@ -426,6 +428,12 @@ def must_root(name):
         root_user2 = json.load(f1)
         print("Admin login is only one chance! Account or password error is directly out")
         while True:
+            with open("user_date.txt",'r') as f:
+                root_user = json.load(f)
+            with open("user_mail.txt",'r') as m:
+                root_mail = json.load(m)
+            with open("root.txt",'r') as f1:
+                root_user2 = json.load(f1)
             print("Dear administrator'{}',The menu is as follows:".format(name))
             print("--------------------------")
             print("| 1.delete users         |")
@@ -515,6 +523,14 @@ def Root():
         if root == "root" and mail == root_mail2[root] and root_md5 == root_user2[root]:
             print("login successful! Welcome! Super administrator:{}".format(root))
             while True:
+                with open("user_date.txt", 'r') as f:
+                    root_user = json.load(f)
+                with open("user_mail.txt", 'r') as m:
+                    root_mail = json.load(m)
+                with open("root.txt", 'r') as f1:
+                    root_user2 = json.load(f1)
+                with open("root_mail.txt", 'r') as m1:
+                    root_mail2 = json.load(m1)
                 print("Dear administrator'{}',The menu is as follows".format(root))
                 print("----------------------------------")
                 print("| 1.delete users                 |")
@@ -604,7 +620,9 @@ def Root():
                         password_chack = [i for i in new_password if i.isalpha()]  # 检查密码里面有没有带字母，没有就是[]空list
                         mail_split = root_mails.split("@")  # 将邮箱拆成两半
                         mail_re = re.findall(r'[^a-z0-9]+', mail_split[0])  # 匹配,有数字和字母都ok,其他都不要
-                        if new_password != again_password:  # 判断两次的密码是否相同
+                        if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:    # 用户名不能包含空格
+                            print("user name not have strip")
+                        elif new_password != again_password:  # 判断两次的密码是否相同
                             print("Twice the password is not the same, please re-enter!")
                             continue
                         elif new_name in root_name and new_name in user_name:  # 检查 新的用户名有没有在本地数据库中
