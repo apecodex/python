@@ -608,7 +608,8 @@ def Root():
                         user_mail = json.load(f)
                     while True:
                         print("输入q可退出注册")
-                        get_mail = [i for i in root_main.values()]  # 得到邮箱
+                        # get_mail = [i for i in root_main.values()]  # 得到邮箱
+                        get_user_mail = [x for x in user_mail.values()] # 得到邮箱
                         new_name = input("root name: ")
                         if new_name == "q" or new_name == "Q":
                             print("已取消注册!")
@@ -630,7 +631,7 @@ def Root():
                             continue
                         elif len(new_password) <= 6 or password_chack == []:  # 密码长度不能小于6位数，并且至少有一个字母
                             print("密码太弱，请输入6位数以上且至少有1一个字母")
-                        elif root_mails in get_mail and root_mail2 in user_mail:  # 检查 邮箱有没有被注册
+                        elif root_mails in get_user_mail:  # 检查 邮箱有没有被注册
                             print("'%s' 邮箱已被注册！" % root_mails)
                         elif mail_re != [] or mail_split[-1] not in ["qq.com", "gmail.com","163.com"]:  # 检查 用户输入的邮箱格式
                             print("请输入正确的邮箱")
@@ -729,13 +730,6 @@ def Root():
 
 
 if __name__ == "__main__":
-    print("Welcome to Guess number Game2.0")
-    print("----------------")
-    print("| 1.login      |")
-    print("| 2.registere  |")
-    print("| 3.Root login |")
-    print("----------------")
-    print("游戏开始前请登录或者注册！")
     try:
         os.mkdir("game_date")
         open("game_date/root.txt",'w')
@@ -743,18 +737,62 @@ if __name__ == "__main__":
         open("root_date/root.txt",'w')
     except FileExistsError:
         pass
-    start_Game = input("1~2~3 ")
-    if start_Game == "1":
-        ReL = Register()
-        ReL.Login()
-    elif start_Game == "2":
-        print("REGISTERED!")
-        Re = Register()
-        if Re.register() == "A":
-            # R = Register()
-            Re.Login()
-    elif start_Game == "3":
-        print("管理员登录")
-        Root()
+    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False:
+        print("您是第一次使用，请输入root帐号与密码")
+        while True:
+            name = input("root name: ")
+            password = input("root passowrd: ")
+            mail = input("root mail: ")
+            password_chack = [i for i in password if i.isalpha()]  # 检查密码里面有没有带字母，没有就是[]空list
+            mail_split = mail.split("@")  # 将邮箱拆成两半
+            mail_re = re.findall(r'[^a-z0-9]+', mail_split[0])  # 匹配,有数字和字母都ok,其他都不要
+            if len(name.split()) != 1 or (name.strip() == name) == False:
+                print("user name not have strip")
+            elif len(password) <= 6 or password_chack == []:  # 密码长度不能小于6位数，并且至少有一个字母
+                print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
+            elif mail_re != [] or mail_split[-1] not in ["qq.com", "gmail.com", "163.com"]:  # 检查 用户输入的邮箱格式
+                print("please enter your vaild email")
+            else:
+                name_pass = {}
+                name_mail = {}
+                get_md5 = hasd_md5(name,password)
+                name_pass[name] = get_md5
+                name_mail[name] = mail
+                re_date = (("user_date.txt",name_pass),
+                           ("user_mail.txt",name_mail),
+                           ("root.txt",name_pass),
+                           ("root_mail.txt",name_mail))
+                for i in re_date:
+                    if os.path.exists(i[0]):
+                        pass
+                    else:
+                        with open(i[0],'w') as rd:
+                            json.dump(i[1],rd)
+                    open("date.txt",'w')
+                break
+    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False:
+        print("File is missing, please re-run!")
+        pass
     else:
-        print("抱歉，选项中没有 '%s'" % start_Game)
+        print("Welcome to Guess number Game2.0")
+        print("----------------")
+        print("| 1.login      |")
+        print("| 2.registere  |")
+        print("| 3.Root login |")
+        print("----------------")
+        print("游戏开始前请登录或者注册！")
+        start_Game = input("1~2~3 ")
+        if start_Game == "1":
+            ReL = Register()
+            ReL.Login()
+        elif start_Game == "2":
+            print("REGISTERED!")
+            Re = Register()
+            if Re.register() == "A":
+                # R = Register()
+                Re.Login()
+        elif start_Game == "3":
+            print("管理员登录")
+            Root()
+        else:
+            print("抱歉，选项中没有 '%s'" % start_Game)
