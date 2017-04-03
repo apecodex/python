@@ -1,4 +1,4 @@
-        # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import json
 import hashlib
@@ -7,6 +7,7 @@ import getpass
 from random import randint
 import re
 import time
+# from bs4 import BeautifulSoup
 
 # 加密密码
 def hasd_md5(user,password):
@@ -207,7 +208,6 @@ class Register:
                             Ref.Find_password()
                         else:
                             continue
-
 # 游戏
 class Game_date:
 
@@ -306,7 +306,7 @@ class Game_date:
                         pass
                     with open("game_date/"+name+".txt",'a') as f:
                         end = time.time()
-                        times = "time cost:%0.2f秒\n" % (end-start)
+                        times = "time cost:%0.2fsecond\n" % (end-start)
                         f.write("Game time:{}\n".format(time.ctime()))
                         print("Guess it！")
                         print(times)
@@ -322,7 +322,7 @@ class Game_date:
                             break
                         else:
                             for i in zip(last_dict.items(),last_dict.values()):
-                                a3 = " num:'{}'\trepeat'{}'次\n".format(i[0][0],i[1])
+                                a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0],i[1])
                                 f.write(a3)
                                 print(a3)
                         a4 = "Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num1)),set(get_num1))
@@ -348,7 +348,7 @@ class Game_date:
                         pass
                     with open("game_date/" + name + ".txt", 'a') as f:
                         end = time.time()
-                        times = "time cost:%0.2f秒\n" % (end-start)
+                        times = "time cost:%0.2fsecond\n" % (end-start)
                         f.write("Game time:{}\n".format(time.ctime()))
                         f.write(times)
                         print("Guess it！")
@@ -364,7 +364,7 @@ class Game_date:
                             break
                         else:
                             for i in zip(last_dict.items(), last_dict.values()):
-                                a3 = " num:'{}'\trepeat'{}'次\n".format(i[0][0], i[1])
+                                a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0], i[1])
                                 f.write(a3)
                                 print(a3)
                         a4 = "Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num2)), set(get_num2))
@@ -390,7 +390,7 @@ class Game_date:
                         pass
                     with open("game_date/" + name + ".txt", 'a') as f:
                         end = time.time()
-                        times = "time cost:%0.2f秒\n" % (end-start)
+                        times = "time cost:%0.2fsecond\n" % (end-start)
                         f.write("Game time:{}\n".format(time.ctime()))
                         f.write(times)
                         print("Guess it！")
@@ -406,7 +406,7 @@ class Game_date:
                             break
                         else:
                             for i in zip(last_dict.items(), last_dict.values()):
-                                a3 = " num:'{}'\trepeat'{}'次\n".format(i[0][0], i[1])
+                                a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0], i[1])
                                 f.write(a3)
                                 print(a3)
                         a4 = "Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num3)), set(get_num3))
@@ -592,10 +592,10 @@ def Root():
                             r.write("\n\n-------------------------------\n")
                             r.write("time:{}，Deleted user'{}'".format(time.ctime(), user))
                             r.write("\n-------------------------------\n")
-                        print("'{}' 删除成功！".format(user))
+                        print("'{}' successfully deleted！".format(user))
                         stop()
                     else:
-                        print("抱歉，没有找到用户'{}'".format(user))
+                        print("Sorry, no users found'{}'".format(user))
                         stop()
                 elif user_selet == "2":
                     with open("root.txt", 'r') as u:  # 获取本地文本文件里的用户数据(用户名和密码)
@@ -608,7 +608,8 @@ def Root():
                         user_mail = json.load(f)
                     while True:
                         print("Enter q to exit the registration")
-                        get_mail = [i for i in root_main.values()]  # 得到邮箱
+                        # get_mail = [i for i in root_main.values()]  # 得到邮箱
+                        get_user_mail = [x for x in user_mail.values()]
                         new_name = input("root name: ")
                         if new_name == "q" or new_name == "Q":
                             print("Unregistered!")
@@ -620,7 +621,7 @@ def Root():
                         password_chack = [i for i in new_password if i.isalpha()]  # 检查密码里面有没有带字母，没有就是[]空list
                         mail_split = root_mails.split("@")  # 将邮箱拆成两半
                         mail_re = re.findall(r'[^a-z0-9]+', mail_split[0])  # 匹配,有数字和字母都ok,其他都不要
-                        if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:    # 用户名不能包含空格
+                        if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:
                             print("user name not have strip")
                         elif new_password != again_password:  # 判断两次的密码是否相同
                             print("Twice the password is not the same, please re-enter!")
@@ -630,7 +631,7 @@ def Root():
                             continue
                         elif len(new_password) <= 6 or password_chack == []:  # 密码长度不能小于6位数，并且至少有一个字母
                             print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
-                        elif root_mails in get_mail and root_mail2 in user_mail:  # 检查 邮箱有没有被注册
+                        elif root_mails in get_user_mail:  # 检查 邮箱有没有被注册
                             print("'%s' The mailbox is already registered！" % root_mails)
                         elif mail_re != [] or mail_split[-1] not in ["qq.com", "gmail.com","163.com"]:  # 检查 用户输入的邮箱格式
                             print("please enter your vaild email")
@@ -650,7 +651,7 @@ def Root():
                             with open("root_date/" + new_name + ".txt", 'w') as f:
                                 f.write("----------------------------------------------------------------------------\n")
                                 f.write("Dear administrator'{}',You are welcome to join us!\n".format(new_name))
-                                f.write("创建时间: ")
+                                f.write("Created time:")
                                 f.write(time.ctime())
                                 f.write("\n---------------------------------------------------------------------------\n\n\n")
                             with open("root_mail.txt", 'w') as s:
@@ -727,15 +728,24 @@ def Root():
     except KeyError:
         print("{}，You are not an administrator！".format(root))
 
+# 用户id
+def user_id():
+    with open("user_date.txt",'r') as ud:
+        user_name = json.load(ud)
+    with open("user_id.txt",'r') as uid:
+        user_ids = json.load(uid)
+    while True:
+        suijishu = str(randint(1, 1000))
+        if name in user_name and suijishu != user_ids[name] and len(user_ids[name]) == 0:
+            user_name[name] = suijishu
+            with open("user_id.txt",'w') as f:
+                json.dump(user_name,f)
+                break
+        else:
+            break
 
+# 实例运行
 if __name__ == "__main__":
-    print("Welcome to Guess number Game2.0")
-    print("----------------")
-    print("| 1.login      |")
-    print("| 2.registere  |")
-    print("| 3.Root login |")
-    print("----------------")
-    print("Please login or register before the game starts！")
     try:
         os.mkdir("game_date")
         open("game_date/root.txt",'w')
@@ -743,18 +753,63 @@ if __name__ == "__main__":
         open("root_date/root.txt",'w')
     except FileExistsError:
         pass
-    start_Game = input("1~2~3 ")
-    if start_Game == "1":
-        ReL = Register()
-        ReL.Login()
-    elif start_Game == "2":
-        print("REGISTERED!")
-        Re = Register()
-        if Re.register() == "A":
-            # R = Register()
-            Re.Login()
-    elif start_Game == "3":
-        print("Administrator Login")
-        Root()
+    # 首次运行，要设置一个root账户
+    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False: # 判断需要的文件是否都存在
+        print("You are using the first time, please enter the root account and password")
+        while True:
+            name = input("root name: ")
+            password = getpass.getpass("root passowrd: ")
+            mail = input("root mail: ")
+            password_chack = [i for i in password if i.isalpha()]  # 检查密码里面有没有带字母，没有就是[]空list
+            mail_split = mail.split("@")  # 将邮箱拆成两半
+            mail_re = re.findall(r'[^a-z0-9]+', mail_split[0])  # 匹配,有数字和字母都ok,其他都不要
+            if len(name.split()) != 1 or (name.strip() == name) == False:
+                print("user name not have strip")
+            elif len(password) <= 6 or password_chack == []:  # 密码长度不能小于6位数，并且至少有一个字母
+                print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
+            elif mail_re != [] or mail_split[-1] not in ["qq.com", "gmail.com", "163.com"]:  # 检查 用户输入的邮箱格式
+                print("please enter your vaild email")
+            else:
+                name_pass = {}
+                name_mail = {}
+                get_md5 = hasd_md5(name,password)
+                name_pass[name] = get_md5
+                name_mail[name] = mail
+                re_date = (("user_date.txt",name_pass),
+                           ("user_mail.txt",name_mail),
+                           ("root.txt",name_pass),
+                           ("root_mail.txt",name_mail))
+                for i in re_date:
+                    if os.path.exists(i[0]):
+                        pass
+                    else:
+                        with open(i[0],'w') as rd:
+                            json.dump(i[1],rd)
+                    open("date.txt",'w')
+                break
+    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False:
+        print("File is missing, please re-run!")
+        pass
     else:
-        print("Sorry, there is no option '%s'" % start_Game)
+        print("Welcome to Guess number Game2.0")
+        print("----------------")
+        print("| 1.login      |")
+        print("| 2.registere  |")
+        print("| 3.Root login |")
+        print("----------------")
+        print("Please login or register before the game starts！")
+        start_Game = input("1~2~3 >>> ")
+        if start_Game == "1":
+            ReL = Register()
+            ReL.Login()
+        elif start_Game == "2":
+            print("REGISTERED!")
+            Re = Register()
+            if Re.register() == "A":
+                # R = Register()
+                Re.Login()
+        elif start_Game == "3":
+            print("Administrator Login")
+            Root()
+        else:
+            print("Sorry, there is no option '%s'" % start_Game)
