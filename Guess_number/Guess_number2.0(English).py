@@ -98,7 +98,7 @@ class Register:
             user_name = json.load(d)
         with open("root_mail.txt",'r') as rm:
             root_mail = json.load(rm)
-        with open("root.txt",'r') as r:
+        with open("administrator.txt",'r') as r:
             roots = json.load(r)
             while True:
                 name = input("user name: ")
@@ -113,7 +113,7 @@ class Register:
                             print("Successfully modified！")
                             with open("user_date.txt",'w') as n:     # 将新的数据写入数据库
                                 json.dump(user_name,n)
-                            with open("root.txt",'w') as rs:
+                            with open("administrator.txt",'w') as rs:
                                 json.dump(user_name,rs)
                                 break
                         else:
@@ -420,78 +420,81 @@ class Game_date:
 
 # 除了超级管理员(root)以外的管理员
 def must_root(name):
+    print(name)
     with open("user_date.txt",'r') as f:
         root_user = json.load(f)
     with open("user_mail.txt",'r') as m:
         root_mail = json.load(m)
-    with open("root.txt",'r') as f1:
+    with open("administrator.txt",'r') as f1:
         root_user2 = json.load(f1)
-        print("Admin login is only one chance! Account or password error is directly out")
-        while True:
-            with open("user_date.txt",'r') as f:
-                root_user = json.load(f)
-            with open("user_mail.txt",'r') as m:
-                root_mail = json.load(m)
-            with open("root.txt",'r') as f1:
-                root_user2 = json.load(f1)
-            print("Dear administrator'{}',The menu is as follows:".format(name))
-            print("--------------------------")
-            print("| 1.delete users         |")
-            print("| 2.View all user names  |")
-            print("| 3.Not yet developed    |")
-            print("| 4.sign out             |")
-            print("--------------------------")
-            user_selet = input(">>> ")
-            if user_selet == "1":
-                print("Please enter the user name to be deleted")
-                user = input(">>> ")
-                if user == name:
-                    print("Warning! You can not delete yourself！")
-                    stop()
-                elif user in root_user2:
-                    print("Permission is not enough! You can not delete the administrator'{}'".format(user))
-                    stop()
-                elif user in root_user:
-                    try:
-                        root_user.pop(user)
-                        root_mail.pop(user)
-                    except KeyError:
-                        pass
-                    if os.name == "posix":  # 如果是Linux系统就直接用 'rm' 删除
-                        os.system("rm game_date/{}".format(user + ".txt"))
-                    else:  # 如果是windows系统就用 'os.remove' 删除
-                        os.remove("game_date/{}".format(user + ".txt"))
-                    print("'{}' successfully deleted！".format(user))
-                    with open("user_date.txt", 'w') as f1:
-                        json.dump(root_user, f1)
-                    with open("user_mail.txt", 'w') as f2:
-                        json.dump(root_mail, f2)
-                    with open("root_date/{}".format(name+".txt"),'a') as r:
-                        r.write("\n\n-------------------------------\n")
-                        r.write("Time:{} Deleted user'{}'".format(time.ctime(),user))
-                        r.write("\n-------------------------------\n")
-                    stop()
-                else:
-                    print("Sorry, no users found{}".format(user))
-                    stop()
-            elif user_selet == "2":
-                for name in root_user:    # 全部的用户名都在"user_date.txt"中
-                    if name == "root":
-                        print("username:{}\tpermissions'{}'".format(name, "Super Administrator"))
-                    elif name in root_user2: # 管理员的用户名在"root.txt"中
-                        print("username:{}\tpermissions'{}'".format(name, "Administrator"))
-                    else:
-                        print("username:{}\tpermissions'{}".format(name, "Players"))
+    print("Admin login is only one chance! Account or password error is directly out")
+    while True:
+        with open("user_date.txt",'r') as f:
+            root_user = json.load(f)
+        with open("user_mail.txt",'r') as m:
+            root_mail = json.load(m)
+        with open("administrator.txt",'r') as f1:
+            root_user2 = json.load(f1)
+        with open("root.txt",'r') as r:
+            roots = json.load(r)
+        print("Dear administrator'{}',The menu is as follows:".format(name))
+        print("--------------------------")
+        print("| 1.delete users         |")
+        print("| 2.View all user names  |")
+        print("| 3.Not yet developed    |")
+        print("| 4.sign out             |")
+        print("--------------------------")
+        user_selet = input(">>> ")
+        if user_selet == "1":
+            print("Please enter the user name to be deleted")
+            user = input(">>> ")
+            if user == name:
+                print("Warning! You can not delete yourself！")
                 stop()
-            elif user_selet == "3":
-                print("Not yet developed！")
+            elif user in root_user2 or user in roots:
+                print("Permission is not enough! You can not delete the administrator'{}'".format(user))
                 stop()
-            elif user_selet == "4":
-                print("Administrator{},Quits!".format(name))
-                break
+            elif user in root_user:
+                try:
+                    root_user.pop(user)
+                    root_mail.pop(user)
+                except KeyError:
+                    pass
+                if os.name == "posix":  # 如果是Linux系统就直接用 'rm' 删除
+                    os.system("rm game_date/{}".format(user + ".txt"))
+                else:  # 如果是windows系统就用 'os.remove' 删除
+                    os.remove("game_date/{}".format(user + ".txt"))
+                print("'{}' successfully deleted！".format(user))
+                with open("user_date.txt", 'w') as f1:
+                    json.dump(root_user, f1)
+                with open("user_mail.txt", 'w') as f2:
+                    json.dump(root_mail, f2)
+                with open("root_date/{}".format(name+".txt"),'a') as r:
+                    r.write("\n\n-------------------------------\n")
+                    r.write("Time:{} Deleted user'{}'".format(time.ctime(),user))
+                    r.write("\n-------------------------------\n")
+                stop()
             else:
-                print("sorry, we do not have that{}".format(user_selet))
+                print("Sorry, no users found{}".format(user))
                 stop()
+        elif user_selet == "2":
+            for name in root_user:    # 全部的用户名都在"user_date.txt"中
+                if name in roots:
+                    print("username:{}\tpermissions'{}'".format(name, "Super Administrator"))
+                elif name in root_user2 and name not in roots: # 管理员的用户名在"root.txt"中
+                    print("username:{}\tpermissions'{}'".format(name, "Administrator"))
+                else:
+                    print("username:{}\tpermissions'{}".format(name, "Players"))
+            stop()
+        elif user_selet == "3":
+            print("Not yet developed！")
+            stop()
+        elif user_selet == "4":
+            print("Administrator{},Quits!".format(name))
+            break
+        else:
+            print("sorry, we do not have that{}".format(user_selet))
+            stop()
 
 def stop():
     print("---------------------------------")
@@ -510,17 +513,19 @@ def Root():
         root_user = json.load(f)
     with open("user_mail.txt",'r') as m:
         root_mail = json.load(m)
-    with open("root.txt",'r') as f1:
+    with open("administrator.txt",'r') as f1:
         root_user2 = json.load(f1)
     with open("root_mail.txt",'r') as m1:
         root_mail2 = json.load(m1)
+    with open("root.txt",'r') as r:
+        roots = json.load(r)
     print("Super administrator login is only one chance! Account or password error is directly out")
     root = input("account number: ")
     password = getpass.getpass("Password: ")
     mail = input("Mail: ")
     root_md5 = hasd_md5(root,password)
     try:
-        if root == "root" and mail == root_mail2[root] and root_md5 == root_user2[root]:
+        if root in roots and mail == root_mail2[root] and root_md5 == roots[root]:
             print("login successful! Welcome! Super administrator:{}".format(root))
             while True:
                 with open("user_date.txt", 'r') as f:
@@ -531,6 +536,8 @@ def Root():
                     root_user2 = json.load(f1)
                 with open("root_mail.txt", 'r') as m1:
                     root_mail2 = json.load(m1)
+                with open("administrator.txt",'r') as ad:
+                    ads = json.load(ad)
                 print("Dear administrator'{}',The menu is as follows".format(root))
                 print("----------------------------------")
                 print("| 1.delete users                 |")
@@ -546,7 +553,7 @@ def Root():
                     if user == "root":
                         print("caveat! You can not delete yourself!")
                         stop()
-                    elif user in root_user and user not in root_user2:
+                    elif user in root_user and user not in ads:
                         # 删除文本文件中的数据pop()
                         try:
                             root_user.pop(user)
@@ -569,10 +576,10 @@ def Root():
                             f3.write("\n-------------------------------------------------------------------\n")
                         print("'{}' successfully deleted！".format(user))
                         stop()
-                    elif user in root_user2:
+                    elif user in ads:
                         try:
                             root_user.pop(user)
-                            root_user2.pop(user)
+                            ads.pop(user)
                             root_mail2.pop(user)
                         except KeyError:
                             pass
@@ -584,7 +591,7 @@ def Root():
                             os.remove("root_date/{}".format(user+".txt"))
                         with open("user_date.txt",'w') as f1:
                             json.dump(root_user,f1)
-                        with open("root.txt",'w') as f3:
+                        with open("administrator.txt",'w') as f3:
                             json.dump(root_user2,f3)
                         with open("root_mail.txt",'w') as f4:
                             json.dump(root_mail2,f4)
@@ -598,7 +605,7 @@ def Root():
                         print("Sorry, no users found'{}'".format(user))
                         stop()
                 elif user_selet == "2":
-                    with open("root.txt", 'r') as u:  # 获取本地文本文件里的用户数据(用户名和密码)
+                    with open("administrator.txt", 'r') as u:  # 获取本地文本文件里的用户数据(用户名和密码)
                         root_name = json.load(u)
                     with open("root_mail.txt",'r') as m:  # 同上，获取本地用户的用户名和邮箱(两个都是dict)
                         root_main = json.load(m)
@@ -640,7 +647,7 @@ def Root():
                             root_name[new_name] = get_user_md5
                             root_user[new_name] = get_user_md5  # 数据库里面的都是dict
                             root_main[new_name] = root_mails
-                            with open("root.txt", 'w') as f:
+                            with open("administrator.txt", 'w') as f:
                                 json.dump(root_name, f)  # 重新写入本地数据库
                             os.system(r"echo > root_date/{}.txt".format(new_name))  # 在注册成功的同时将用户的Game数据创建了～
                             print("%s Created successfully！" % new_name)
@@ -673,6 +680,8 @@ def Root():
                         spuer = json.load(r)
                     with open("root_mail.txt", 'r') as rm:
                         spuer_mail = json.load(rm)
+                    with open("administrator.txt",'r') as admin:
+                        admins = json.load(admin)
                     with open("user_date.txt",'r') as user_date:
                         user_dates = json.load(user_date)
                         print("-------------------------------------")
@@ -682,22 +691,23 @@ def Root():
                         user = input(">>> ")
                         if user == "1":
                             for name in user_dates:
-                                if name == "root":
+                                if name in spuer and name not in admins:
                                     print("username:{}\tpermissions'{}'".format(name,"Super Administrator"))
-                                elif name in spuer:
+                                elif name in admins and name not in spuer:
                                     print("username:{}\tpermissions'{}'".format(name, "Administrator"))
                                 else:
                                     print("username:{}\tpermissions'{}'".format(name, "Players"))
                             stop()
                         elif user == "2":
                             a = [i for i in spuer.keys()]
+                            b = [i for i in admins.keys()]
                             # 因为root.txt文件里没有管理员的邮箱，所以要吧root_mail.txt里面的邮箱添加到root.txt中(mails)
                             for i in zip(spuer_mail.keys(), spuer_mail.values()):
                                 mails[i[0]] = i[1]
                             for mail in zip(mails.keys(), mails.values()):
-                                if mail[0] == "root":
+                                if mail[0] in a:
                                     print("username:{}\tmail:{}\tpermissions'{}'".format(mail[0], mail[1], "Super Administrator"))
-                                elif mail[0] in a:
+                                elif mail[0] in b:
                                     print("username:{}\tmail:{}\tpermissions'{}'".format(mail[0], mail[1], "Administrator"))
                                 else:
                                     print("username:{}\tmail:{}\tpermissions'{}'".format(mail[0], mail[1], "Players"))
@@ -720,7 +730,7 @@ def Root():
                     stop()
         elif mail != root_mail2[root]:
             print("Mailbox error！")
-        elif root in root_user2 and mail == root_mail2[root] and root_md5 == root_user2[root]:
+        elif root in root_user2 and mail == root_mail2[root] and root_md5 == root_user2[root] and root not in roots:
             print("administrator'{}',Welcome！".format(root))
             must_root(root)
         else:
@@ -754,7 +764,7 @@ if __name__ == "__main__":
     except FileExistsError:
         pass
     # 首次运行，要设置一个root账户
-    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False: # 判断需要的文件是否都存在
+    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False and os.path.exists("administrytor.txt") == False: # 判断需要的文件是否都存在
         print("You are using the first time, please enter the root account and password")
         while True:
             name = input("root name: ")
@@ -775,8 +785,7 @@ if __name__ == "__main__":
                 get_md5 = hasd_md5(name,password)
                 name_pass[name] = get_md5
                 name_mail[name] = mail
-                re_date = (("user_date.txt",name_pass),
-                           ("user_mail.txt",name_mail),
+                re_date = (
                            ("root.txt",name_pass),
                            ("root_mail.txt",name_mail))
                 for i in re_date:
@@ -786,8 +795,15 @@ if __name__ == "__main__":
                         with open(i[0],'w') as rd:
                             json.dump(i[1],rd)
                     open("date.txt",'w')
+                admins = {}
+                with open("user_date.txt",'w') as name_pass:
+                    json.dump(admins,name_pass)
+                with open("user_mail.txt",'w') as name_mail:
+                    json.dump(admins,name_mail)
+                with open("administrator.txt",'w') as admin:
+                    json.dump(admins,admin)
                 break
-    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False:
+    if os.path.exists("administrytor.txt") == False and os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False:
         print("File is missing, please re-run!")
         pass
     else:
