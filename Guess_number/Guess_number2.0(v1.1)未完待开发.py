@@ -30,15 +30,30 @@ def sql_db():
     FOREIGN KEY (user_id) REFERENCES user (id)
     );
 
-    CREATE TABLE players_message(
+    CREATE TABLE players_data(
     id INTEGER UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    user_id INTEGER UNIQUE,
+    user_id INTEGER UNSIGNED,
     game_time DATETIME,
-    second VARCHAR(32) DEFAULE 0,
-    total_input VARCHAR(255) DEFAULE '[]',
-    mode VARCHAR(32) DEFAULE 'NO',
+    second CHAR(32),
+    guess_times CHAR(32),
+    total_input VARCHAR(255),
+    repetition VARCHAR(12),
+    mode VARCHAR(32),
     FOREIGN KEY (user_id) REFERENCES user (id)
     );
+    CREATE TABLE login_exit_time(
+    id INTEGER UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INTEGER UNSIGNED,
+    login_time DATETIME,
+    exit_time DATETIME,
+    FOREIGN KEY (user_id) REFERENCES user (id)
+    );
+    CREATE TABLE del_user(
+    id INTEGER UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    admin_id VARCHAR(88),
+    remove_user_name VARCHAR(88),
+    FOREIGN KEY (admin_id) REFERENCES administrator (id)
+    )
     """
     try:
         cursor.executescript(date)
@@ -64,19 +79,20 @@ class Options_sql():
     def add_sql(self,name,password,mail):
         ids = []
         message_id = []
-        get_max_id = self.cursor.execute("SELECT * FROM user WHERE id=(SELECT MAX(id) from user);")
-        get_message_max_id = self.cursor.execute("SELECT * FROM players_message WHERE id=(SELECT MAX(id) from user);")
+        get_max_id = self.cursor.execute("SELECT MAX(id) FROM user;")
         for i in get_max_id:
             ids.append(i[0])
-        for m in get_message_max_id:
-            message_id.append(m[0])
         data = """
         INSERT INTO user (id,name,password,mail,`time`) VALUES ({},'{}','{}','{}','{}');
         """.format(ids[0]+1,name,password,mail,self.get_time())
+        get_message_max_id = self.cursor.execute("SELECT MAX(id) FROM players_data;")
+        for m in get_message_max_id:
+            message_id.append(m[0])
         date_message = """
-        INSERT INTO players_message (id,user_id,game_time,second,total_input,mode) VALUES ({},{},'{}',{},'{}','{}')
-        """.format(message_id[0]+1,ids[0]+1,'0000-00-00-00-00',,,)
+        INSERT INTO players_data (id,user_id,game_time,second,total_input,repetition,mode) VALUES ({},{},'{}',{},'{}','{}','{}');
+        """.format(message_id[0]+1,ids[0]+1,'0000-00-00-00-00',0,'','','No')
         self.cursor.execute(data)
+        self.cursor.execute(date_message)
         self.cursor.close()
         self.connect_sql.commit()
         self.connect_sql.close()
@@ -93,10 +109,10 @@ class Options_sql():
             admin_id.append(i[0])
         data = """
         INSERT INTO user (id,name,password,mail,'time') VALUES ({},'{}','{}','{}','{}');
-        """.format(user_id[0]+1,name,password,mail,self.get_time)
+        """.format(user_id[0]+1,name,password,mail,self.get_time())
         admin_data = """
         INSERT INTO administrator (id,user_id,create_time) VALUES ({},{},'{}');
-        """.format(admin_id[0]+1,user_id[0]+1,self.get_time)
+        """.format(admin_id[0]+1,user_id[0]+1,self.get_time())
         self.cursor.execute(data)
         self.cursor.execute(admin_data)
         self.cursor.close()
@@ -104,18 +120,18 @@ class Options_sql():
         self.connect_sql.close()
 
     # 存储用户的游戏数据
-    def players_data(self,name,game_time,second,total_input,mode):
+    def players_data(self,name,game_time,second,total_input,filter_input,mode):
         message_id = []
         find_uid = """
-        SELECT id FROM players_message WHERE user_id=(SELECT id FROM user WHERE name='{}');
+        SELECT id FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}');
         """.format(name)
         players_message_id = self.cursor.execute(find_uid)
         get_max_id = self.cursor.execute("SELECT MAX(id) FROM players_message;")
         for m in get_max_id:
             message_id.append(m[0])
         save_data = """
-        INSERT INTO players_message (id,user_id,game_time,second,total_input,mode) VALUES ({},{},'{}',{},'{}','{}')
-        """.format(message_id[0],players_message_id,game_time,second,total_input,mode)
+        INSERT INTO players_data (id,user_id,game_time,second,total_input,filter_input,mode) VALUES ({},{},'{}',{},'{}','{}','{}')
+        """.format(message_id[0],players_message_id,game_time,second,total_input,filter_input,mode)
         self.cursor.execute(save_data)
         self.cursor.close()
         self.connect_sql.commit()
@@ -126,21 +142,25 @@ class Options_sql():
     def root_pop_sql(self,name):
         delete_user = "DELETE FROM user WHERE id=(SELECT id FROM user WHERE name='{}')".format(name)
         delete_admin = "DELETE FROM administrator WHERE user_id=(SELECT id FROM name='{}'')".format(name)
-        delete_players_message = "DELETE FROM players_message WHERE user_id=(SELECT id FROM user WHERE name='{}')".format(name)
+        delete_players_data = "DELETE FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}')".format(name)
         self.cursor.execute(delete_user)
         self.cursor.execute(delete_admin)
-        self.cursor.execute(delete_players_message)
+        self.cursor.execute(delete_players_data)
         self.cursor.close()
         self.connect_sql.commit()
         self.connect_sql.clsoe()
 
     #删除用户 (administrator)
     def admin_pop_sql(self,name):
-        get_id = self.cursor.execute("SELECT")
-
-    def get_user_game_message(self,name):
+        remove_user = "DELETE FROM user WHERE id=(SELECT id FROM user WHERE name='{}')".format(name)
+        remove_palyers_data = "DELETE FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}'')".format(name)
+        self.cursor.execute(remove_user)
+        self.cursor.execute(remove_palyers_data)
         pass
-
+    
+    #找回密码
+    def find_passworld(self,name):
+        pass
 
 # 加密密码
 def hasd_md5(user,password):
@@ -157,6 +177,12 @@ def cat_game_history(name):
             print(cat_file.read())
 # 登录系统
 class Register:
+
+    # 初始化
+    def __init__(self):
+        self.connect_sql = sqlite3.connect('guess_number.db')
+        self.cursor = self.connect_sql.cursor()
+
     # 注册
     def register(self):
         print("------------------------------")
@@ -199,6 +225,8 @@ class Register:
                     get_user_md5 = hasd_md5(new_name, new_password)
                     user_name[new_name] = get_user_md5  # 数据库里面的都是dict
                     user_main[new_name] = new_mail
+                    O = Options_sql()
+                    O.add_sql(new_name,get_user_md5,new_mail)
                     with open("user_date.txt",'w') as f:
                         json.dump(user_name,f)   # 重新写入本地数据库
                     if os.name == "posix":
@@ -268,81 +296,128 @@ class Register:
                     break
                 else:
                     print("User name or mailbox error")
+
     # 主函数，登录
     def Login(self):
         print("Login System!")
         print("----------------------")
         print("|  ~Login Interface~ |")
         print("----------------------")
+        total_user = {}
+        try:
+            select_user_data = self.cursor.execute("SELECT name,password FROM user;")
+        except sqlite3.ProgrammingError:
+            pass
+        for check in select_user_data:
+            total_user[check[0]] = check[1]
         while True:
             print("Any key to continue to log in, enter 'q' to cancel the login")
             s = input(">>> ")
             if s == "q" or s == "Q":
                 print("Sign-in canceled")
                 break
-            with open("user_date.txt",'r') as u:  # 获取用户的数据
-                user_date = json.load(u)
-                name = input("User name: ")
-                password = getpass.getpass("password: ")
-                get_password_md5 = hasd_md5(name,password)
-                if name not in user_date:
-                    print("User name% s does not exist! \n Any key to continue registration, 'q' to exit" % name)
-                    seleste = input(">>> ")      # 退出注册！
-                    if seleste == "q":
-                        print("Quits!")
-                        Re = Register()
-                        Re.Login()
-                        break
-                    print("REGISTERED!")     # 除了输入'q'以外的继续注册
+            name = input("User name: ")
+            password = getpass.getpass("password: ")
+            get_password_md5 = hasd_md5(name,password)
+            if name == "" and password == "":
+                print("Account or password cannot be empty!")
+            elif name not in total_user:
+                print("User name %s does not exist! \nAny key to continue registration, 'q' to exit" % name)
+                seleste = input(">>> ")     
+                if seleste == "q":
+                    print("Quits!")
                     Re = Register()
-                    Re.register()
-                else:
-                    if name in user_date and user_date[name] == get_password_md5:     # 判断用户输入的密码是否与数据库的相同
-                        print("Welcome %s" % name)
-                        with open("date.txt",'a') as d:   # 如果登录成功,则把登录时间写入'date.txt'
-                            d.write("\n\n************************************************************\n")
-                            d.write("time:{},user'{}'Login game".format(time.ctime(),name))
-                            d.write("\n************************************************************\n")
-                        print("Dear'%s',Welcome！" % name)
-                        while True:
-                            print("------------------")
-                            print("-------Menu Bar--------")
-                            print("| 1.Start a new game  |")
-                            print("| 2.View history      |")
-                            print("| 3.sign out          |")
-                            print("-----------------------")
-                            user_input = input("1-2-3")
-                            if user_input == "1":
-                                game = Game_date()
-                                game.main(name)
-                                stop()
-                                continue
-                            elif user_input == "2":
-                                cat_game_history(name)
-                                stop()
-                                continue
-                            elif user_input == "3":
-                                print("{}，Signed out!".format(name))
-                                with open("date.txt",'a') as f:
-                                    f.write("\n\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n")
-                                    f.write("time:{},user'{}'Logged out!".format(time.ctime(),name))
-                                    f.write("\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n")
-                                break
-                            else:
-                                print("Sorry, there is no option '%s'" % user_input)
-                                continue
-                            break
-                    else:
-                        print("Account or password error, whether to retrieve the password？(y/n)")
-                        enter = str(input(">>> "))
-                        if enter == "Y" or enter == "y":    #如果密码错误，可选择找回密码（重新设置）
-                            print("Find the password")
-                            Ref = Register()
-                            Ref.Find_password()
-                        else:
+                    Re.Login()
+                    break
+                print("REGISTERED!")
+                Re = Register()
+                Re.register()
+            else:
+                if name in total_user and get_password_md5 == total_user[name]:
+                    O = Options_sql()
+                    login_times = O.get_time()
+                    print("Dear'%s',Welcome!" % name)
+                    while True:
+                        print("------------------")
+                        print("-------Menu Bar--------")
+                        print("| 1.Start a new game  |")
+                        print("| 2.View history      |")
+                        print("| 3.sign out          |")
+                        print("-----------------------")
+                        user_input = input("1-2-3 ")
+                        if user_input == "1":
+                            game = Game_date()
+                            game.main(name)
+                            stop()
                             continue
+                        elif user_input == "2":
+                            find_sql = "SELECT game_time,second,guess_times,total_input,repetition,mode FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}');".format(name)
+                            select_palyers_data = self.cursor.execute(find_sql)
+                            for date in select_palyers_data:
+                                if date[4] == "0":    
+                                    print('Game Times: %s\n' % date[0])
+                                    print("Game Mode: %s\n" % date[5])
+                                    print("You guess the '%s' times,the number enteren is '%s'\n" % (date[2],"".join(date[3])))
+                                    print("There is no duplication！\n")
+                                    print("use times: %s\n" % date[1])
+                                    print("-------------------------------------------------------\n")
+                                elif date[4] == "1":
+                                    print('Game Times: %s\n' % date[0])
+                                    print("Game Mode: %s\n" % date[5])
+                                    print("You guess the '%s' times,the number enteren is '%s'\n" % (date[2],"".join(date[3])))
+                                    get_reast = date[3].split(',')
+                                    get_exceed_two = [i for i in get_reast if get_reast.count(i) >= 2]
+                                    exceed_list = {}
+                                    for i in set(get_exceed_two):
+                                        exceed_list[i] = get_exceed_two.count(i)
+                                    for exceed in zip(exceed_list.items(),exceed_list.values()):
+                                        print("num:'{}'\trepeat'{}'Times\n".format(exceed[0][0],exceed[1]))
+                                    get_reast = "".join(date[3]).split(',')
+                                    filter_reast = set(get_reast)
+                                    print("According to the requirements, not repeat, remove duplicate, you only guess '%s' times,The end result is '%s'" % (len(set(date[3].split(","))),",".join(filter_reast)))
+                                    print("use times: %s\n" % date[1])
+                                    print("-------------------------------------------------------\n")
+                                else:
+                                    print("You haven't played")
+                            stop()
+                            continue
+                        elif user_input == "3":
+                            ids = []
+                            get_login_exit_max_id = self.cursor.execute("SELECT MAX(id) FROM login_exit_time;")
+                            for i in get_login_exit_max_id:
+                                ids.append(i[0])
+                            select_user_str = "SELECT id FROM user WHERE name='{}';".format(name)
+                            get_user_id = self.cursor.execute(select_user_str)
+                            name_id = []
+                            for x in get_user_id:
+                                name_id.append(x[0])
+                            exit_times = O.get_time()
+                            select_times = "INSERT INTO login_exit_time (id,user_id,login_time,exit_time) VALUES ({},{},'{}','{}')".format(ids[0]+1,name_id[0],login_times,exit_times)
+                            save_exit_time = self.cursor.execute(select_times)
+                            print("{},exit".format(name))
+                            self.cursor.close()
+                            self.connect_sql.commit()
+                            self.connect_sql.close()
+                            break
+                        else:
+                            print("Sorry, no option '%s' " % user_input)
+                            continue
+                        break
+                else:
+                    print("Account or password mistake, back?(y/n)")
+                    enter = str(input(">>> "))
+                    if enter == "Y" or enter == "y":  
+                        print("Find the password")
+                        Ref = Register()
+                        Ref.Find_password()
+                    else:
+                        continue
 # 游戏
 class Game_date:
+
+    def __init__(self):
+        self.connect_sql = sqlite3.connect("guess_number.db")
+        self.cursor = self.connect_sql.cursor()
 
     def main(self,name):
         print("Start Game!")
@@ -363,34 +438,21 @@ class Game_date:
         print("| 2.general    |")
         print("| 3.difficult  |")
         print("````````````````")
+        O = Options_sql()
+        get_times = O.get_time()
         while True:
             user = input(">>> ")
             if user == "1":
                 print("~~~~~Simple mode~~~~~")
                 print("Please enter an integer no greater than 20 and no less than 0")
-                with open("date.txt",'a') as d1:
-                    d1.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-                    d1.write("time:{}\n".format(time.ctime()))
-                    d1.write("user'{}',Play'{}'the game".format(name,"Simple mode"))
-                    d1.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 break
             elif user == "2":
                 print("~~~~~General Mode~~~~~")
                 print("Please enter an integer no greater than 50 and no less than 0")
-                with open("date.txt", 'a') as d2:
-                    d2.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-                    d2.write("time:{}\n".format(time.ctime()))
-                    d2.write("user'{}',Play'{}'the game".format(name, "General Mode"))
-                    d2.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-                    break
+                break
             elif user == "3":
                 print("~~~~~Difficult mode~~~~~")
                 print("Please enter an integer no greater than 100 and no less than 0")
-                with open("date.txt",'a') as d3:
-                    d3.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-                    d3.write("time:{}\n".format(time.ctime()))
-                    d3.write("user'{}',Play'{}'the game".format(name,"Difficult mode"))
-                    d3.write("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
                 break
             else:
                 print("sorry, we do not have that{}".format(user))
@@ -437,31 +499,35 @@ class Game_date:
                         last_dict.pop("")
                     except KeyError:
                         pass
-                    with open("game_date/"+name+".txt",'a') as f:
                         end = time.time()
                         times = "time cost:%0.2fsecond\n" % (end-start)
-                        f.write("Game time:{}\n".format(time.ctime()))
                         print("Guess it！")
                         print(times)
-                        f.write(times)
-                        a1 = "Guess the'{}'times, this time you guess the total number{}\n".format(cishu,get_num1)
-                        print(a1)
-                        f.write(a1)
-                        if not_reast == set():
-                            a2 = "There is no duplication！\n"
-                            f.write(a2)
-                            f.write("__________________________________________________________________________________\n\n\n")
-                            print(a2)
-                            break
+                        print("Guess the'{}'times, this time you guess the total number {}\n".format(cishu,",".join(get_num1)))
+                        times2 = "%0.2f" % (end-start)
+                        ids = []
+                        get_palyers_data_max_id = self.cursor.execute("SELECT MAX(id) FROM players_data")
+                        for i in get_palyers_data_max_id:
+                            ids.append(i[0])
+                        user_id_str = "SELECT id FROM user WHERE name='{}'".format(name)
+                        get_user_id = self.cursor.execute(user_id_str)
+                        for i in get_user_id:
+                            ids.append(i[0])
+                        not_reast_sql_save_zero = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}')".format(ids[0]+1,ids[1],get_times,float(times2),cishu,",".join(get_num1),'0',"simple")
+                        not_reast_sql_save_one = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}')".format(ids[0]+1,ids[1],get_times,float(times2),cishu,",".join(get_num1),'1',"simple")
+                        ax = [i for i in get_num1 if get_num1.count(i) >= 2]
+                        if ax == []:
+                            self.cursor.execute(not_reast_sql_save_zero)
+                            print("There is no duplication！\n")
                         else:
                             for i in zip(last_dict.items(),last_dict.values()):
                                 a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0],i[1])
-                                f.write(a3)
                                 print(a3)
-                        a4 = "Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num1)),set(get_num1))
-                        f.write(a4)
-                        print(a4)
-                        f.write("__________________________________________________________________________________\n\n\n")
+                            self.cursor.execute(not_reast_sql_save_one)
+                            print("Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num1)),set(get_num1)))
+                        self.cursor.close()
+                        self.connect_sql.commit()
+                        self.connect_sql.close()
                         break
                 elif new_user < suijishu1:
                     print("Too small")
@@ -479,35 +545,39 @@ class Game_date:
                         last_dict.pop("")
                     except KeyError:
                         pass
-                    with open("game_date/" + name + ".txt", 'a') as f:
                         end = time.time()
                         times = "time cost:%0.2fsecond\n" % (end-start)
-                        f.write("Game time:{}\n".format(time.ctime()))
-                        f.write(times)
                         print("Guess it！")
                         print(times)
-                        a1 = "Guess the'{}'times, this time you guess the total number{}\n".format(cishu, get_num2)
-                        print(a1)
-                        f.write(a1)
-                        if not_reast == set():
-                            a2 = "There is no duplication！\n"
-                            f.write(a2)
-                            f.write("__________________________________________________________________________________\n\n\n")
-                            print(a2)
-                            break
+                        print("Guess the'{}'times, this time you guess the total number {}\n".format(cishu,",".join(get_num2)))
+                        times2 = "%0.2f" % (end-start)
+                        ids = []
+                        get_palyers_data_max_id = self.cursor.execute("SELECT MAX(id) FROM players_data")
+                        for i in get_palyers_data_max_id:
+                            ids.append(i[0])
+                        user_id_str = "SELECT id FROM user WHERE name='{}'".format(name)
+                        get_user_id = self.cursor.execute(user_id_str)
+                        for i in get_user_id:
+                            ids.append(i[0])
+                        not_reast_sql_save_zero = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}')".format(ids[0]+1,ids[1],get_times,float(times2),cishu,",".join(get_num2),'0',"general")
+                        not_reast_sql_save_one = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}')".format(ids[0]+1,ids[1],get_times,float(times2),cishu,",".join(get_num2),'1',"general")
+                        ax = [i for i in get_num2 if get_num2.count(i) >= 2]
+                        if ax == []:
+                            self.cursor.execute(not_reast_sql_save_zero)
+                            print("There is no duplication！\n")
                         else:
-                            for i in zip(last_dict.items(), last_dict.values()):
-                                a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0], i[1])
-                                f.write(a3)
+                            for i in zip(last_dict.items(),last_dict.values()):
+                                a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0],i[1])
                                 print(a3)
-                        a4 = "Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num2)), set(get_num2))
-                        f.write(a4)
-                        print(a4)
-                        f.write("__________________________________________________________________________________\n\n\n")
+                            self.cursor.execute(not_reast_sql_save_one)
+                            print("Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num2)),set(get_num2)))
+                        self.cursor.close()
+                        self.connect_sql.commit()
+                        self.connect_sql.close()
                         break
-                elif new_user < suijishu2:
+                elif new_user < suijishu3:
                     print("Too small")
-                cishu += 1
+                cishu+=1
             elif user == "3":
                 if new_user > 100 or new_user < 0:
                     compute_total.pop(user_input)
@@ -521,35 +591,39 @@ class Game_date:
                         last_dict.pop("")
                     except KeyError:
                         pass
-                    with open("game_date/" + name + ".txt", 'a') as f:
                         end = time.time()
                         times = "time cost:%0.2fsecond\n" % (end-start)
-                        f.write("Game time:{}\n".format(time.ctime()))
-                        f.write(times)
                         print("Guess it！")
                         print(times)
-                        a1 = "Guess the'{}'times, this time you guess the total number{}\n".format(cishu, get_num3)
-                        print(a1)
-                        f.write(a1)
-                        if not_reast == set():
-                            a2 = "There is no duplication！\n"
-                            f.write(a2)
-                            f.write("__________________________________________________________________________________\n\n\n")
-                            print(a2)
-                            break
+                        print("Guess the'{}'times, this time you guess the total number {}\n".format(cishu,",".join(get_num3)))
+                        times2 = "%0.2f" % (end-start)
+                        ids = []
+                        get_palyers_data_max_id = self.cursor.execute("SELECT MAX(id) FROM players_data")
+                        for i in get_palyers_data_max_id:
+                            ids.append(i[0])
+                        user_id_str = "SELECT id FROM user WHERE name='{}'".format(name)
+                        get_user_id = self.cursor.execute(user_id_str)
+                        for i in get_user_id:
+                            ids.append(i[0])
+                        not_reast_sql_save_zero = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}')".format(ids[0]+1,ids[1],get_times,float(times2),cishu,",".join(get_num3),'0',"difficult")
+                        not_reast_sql_save_one = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}')".format(ids[0]+1,ids[1],get_times,float(times2),cishu,",".join(get_num3),'1',"difficult")
+                        ax = [i for i in get_num3 if get_num3.count(i) >= 2]
+                        if ax == []:
+                            self.cursor.execute(not_reast_sql_save_zero)
+                            print("There is no duplication！\n")
                         else:
-                            for i in zip(last_dict.items(), last_dict.values()):
-                                a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0], i[1])
-                                f.write(a3)
+                            for i in zip(last_dict.items(),last_dict.values()):
+                                a3 = " num:'{}'\trepeat'{}'Times\n".format(i[0][0],i[1])
                                 print(a3)
-                        a4 = "Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num3)), set(get_num3))
-                        f.write(a4)
-                        print(a4)
-                        f.write("__________________________________________________________________________________\n\n\n")
+                            self.cursor.execute(not_reast_sql_save_one)
+                            print("Remove the duplicates, only guess the {} times, only entered{}\n".format(len(set(get_num3)),set(get_num3)))
+                        self.cursor.close()
+                        self.connect_sql.commit()
+                        self.connect_sql.close()
                         break
                 elif new_user < suijishu3:
                     print("Too small")
-                cishu += 1
+                cishu+=1
 
 # 除了超级管理员(root)以外的管理员
 def must_root(name):
@@ -896,6 +970,10 @@ if __name__ == "__main__":
         open("root_date/root.txt",'w')
     except FileExistsError:
         pass
+    if os.path.exists("guess_number.db"):
+        pass
+    else:
+        sql_db()
     # 首次运行，要设置一个root账户
     if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False and os.path.exists("administrytor.txt") == False: # 判断需要的文件是否都存在
         print("You are using the first time, please enter the root account and password")
@@ -929,6 +1007,21 @@ if __name__ == "__main__":
                             json.dump(i[1],rd)
                     open("date.txt",'w')
                 admins = {}
+                O = Options_sql()
+                connect_sql = sqlite3.connect("guess_number.db")
+                cursor = connect_sql.cursor()
+                FIRST_DATA = "INSERT INTO user (id,name,password,mail,`time`) VALUES ({},'{}','{}','{}','{}');".format(1,name,get_md5,mail,O.get_time())
+                PALYERS_DATA = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}');".format(1,1,'0000-00-00-00-00',0,0,'','','No')
+                ADMINISTRATOR_DATA = "INSERT INTO administrator (id,user_id,create_time) VALUES ({},{},'{}')".format(1,1,O.get_time())
+                LOGIN_EXIT_TIME_DATA = "INSERT INTO login_exit_time (id,user_id,login_time,exit_time) VALUES (1,1,'0000-00-00-00-00','0000-00-00-00-00')"
+                cursor.execute(FIRST_DATA)
+                cursor.execute(PALYERS_DATA)
+                cursor.execute(ADMINISTRATOR_DATA)
+                cursor.execute(LOGIN_EXIT_TIME_DATA)
+                cursor.close()
+                connect_sql.commit()
+                connect_sql.close()
+
                 with open("user_date.txt",'w') as name_pass:
                     json.dump(admins,name_pass)
                 with open("user_mail.txt",'w') as name_mail:
