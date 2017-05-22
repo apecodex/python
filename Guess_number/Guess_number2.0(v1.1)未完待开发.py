@@ -50,7 +50,7 @@ def sql_db():
     );
     CREATE TABLE del_user(
     id INTEGER UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    admin_id VARCHAR(88),
+    admin_id INTEGER UNSIGNED,
     remove_user_name VARCHAR(88),
     FOREIGN KEY (admin_id) REFERENCES administrator (id)
     )
@@ -98,13 +98,13 @@ class Options_sql():
         self.connect_sql.close()
 
     #添加管理员数据
-    def add_admin(self,name,password,mail,create_time):
+    def add_admin(self,name,password,mail):
         user_id = []
         admin_id = []
         get_user_max_id = self.cursor.execute("SELECT * FROM user WHERE id=(SELECT MAX(id) from user);")
-        get_admin_max_id = self.cursor.execute("SELECT * FROM administrator WHERE id=(SELECT MAX(id) from administrator);")
         for i in get_user_max_id:
             user_id.append(i[0])
+        get_admin_max_id = self.cursor.execute("SELECT * FROM administrator WHERE id=(SELECT MAX(id) from administrator);")
         for i in get_admin_max_id:
             admin_id.append(i[0])
         data = """
@@ -120,7 +120,7 @@ class Options_sql():
         self.connect_sql.close()
 
     # 存储用户的游戏数据
-    def players_data(self,name,game_time,second,total_input,filter_input,mode):
+    def players_data(self,name,game_time,second,total_input,repetition,mode):
         message_id = []
         find_uid = """
         SELECT id FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}');
@@ -130,8 +130,8 @@ class Options_sql():
         for m in get_max_id:
             message_id.append(m[0])
         save_data = """
-        INSERT INTO players_data (id,user_id,game_time,second,total_input,filter_input,mode) VALUES ({},{},'{}',{},'{}','{}','{}')
-        """.format(message_id[0],players_message_id,game_time,second,total_input,filter_input,mode)
+        INSERT INTO players_data (id,user_id,game_time,second,total_input,repetition,mode) VALUES ({},{},'{}',{},'{}','{}','{}')
+        """.format(message_id[0],players_message_id,game_time,second,total_input,repetition,mode)
         self.cursor.execute(save_data)
         self.cursor.close()
         self.connect_sql.commit()
@@ -140,27 +140,36 @@ class Options_sql():
 
     #删除用户（ROOT）
     def root_pop_sql(self,name):
+        del_id = []
+        get_max_id = self.cursor.execute("SELECT MAX(id) FROM del_id;")
+        for m in get_max_id:
+            del_id.append(m[0])
         delete_user = "DELETE FROM user WHERE id=(SELECT id FROM user WHERE name='{}')".format(name)
-        delete_admin = "DELETE FROM administrator WHERE user_id=(SELECT id FROM name='{}'')".format(name)
+        delete_admin = "DELETE FROM administrator WHERE user_id=(SELECT id FROM user WHERE name='{}')".format(name)
         delete_players_data = "DELETE FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}')".format(name)
+        delete_date_recard = "INSERT INTO del_user (id,admin_id,remove_user_name) VALUES ({},{},'{}')".format(del_id[0],1,name)
         self.cursor.execute(delete_user)
         self.cursor.execute(delete_admin)
         self.cursor.execute(delete_players_data)
+        self.cursor.execute(delete_date_recard)
         self.cursor.close()
         self.connect_sql.commit()
-        self.connect_sql.clsoe()
+        self.connect_sql.close()
 
     #删除用户 (administrator)
     def admin_pop_sql(self,name):
         remove_user = "DELETE FROM user WHERE id=(SELECT id FROM user WHERE name='{}')".format(name)
-        remove_palyers_data = "DELETE FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}'')".format(name)
+        remove_palyers_data = "DELETE FROM players_data WHERE user_id=(SELECT id FROM user WHERE name='{}')".format(name)
         self.cursor.execute(remove_user)
         self.cursor.execute(remove_palyers_data)
-        pass
     
     #找回密码
-    def find_passworld(self,name):
-        pass
+    def find_passworld(self,name,new_password):
+        get_user_date = "UPDATE user SET password = '{}' WHERE id=(SELECT id FROM user WHERE name='{}')".format(new_password,name)
+        self.cursor.execute(get_user_date)
+        self.cursor.close()
+        self.connect_sql.commit()
+        self.connect_sql.close()
 
 # 加密密码
 def hasd_md5(user,password):
@@ -168,13 +177,7 @@ def hasd_md5(user,password):
     md5.update((user+password+"Guess*Number").encode())
     return md5.hexdigest()
 
-# 查看游戏的历史记录
-def cat_game_history(name):
-    with open("game_date/"+name+".txt",'r') as cat_file:
-        if os.name == "posix":
-            os.system("gedit game_date/{}.txt".format(name))
-        else:
-            print(cat_file.read())
+
 # 登录系统
 class Register:
 
@@ -188,114 +191,91 @@ class Register:
         print("------------------------------")
         print("|  ~Registration interface~  |")
         print("------------------------------")
-        with open("user_date.txt",'r') as u:   # 获取本地文本文件里的用户数据(用户名和密码)
-            user_name = json.load(u)
-        with open("user_mail.txt") as m:     # 同上，获取本地用户的用户名和邮箱(两个都是dict)
-            user_main = json.load(m)
-            while True:
-                print("Enter q to exit the registration")
-                get_mail = [i for i in user_main.values()]  # 得到邮箱
-                new_name = input("New name: ")
-                if new_name == "q" or new_name == "Q":
-                    print("Unregistered!")
-                    Re = Register()
-                    Re.Login()
-                    break
-                new_password = getpass.getpass("New Password: ")
-                again_password = getpass.getpass("Again Password:")
-                new_mail = input("Mail: ")
-                password_chack = [i for i in new_password if i.isalpha()]   # 检查密码里面有没有带字母，没有就是[]空list
-                mail_split = new_mail.split("@")      # 将邮箱拆成两半
-                mail_re = re.findall(r'[^a-z0-9]+',mail_split[0])     # 匹配,有数字和字母都ok,其他都不要
-                if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:  # 用户名中不能有空格
-                    print("user name not have strip")
-                elif new_password != again_password:    # 判断两次的密码是否相同
-                    print("Twice the password is not the same, please re-enter!")
-                    continue
-                elif new_name in user_name:    # 检查 新的用户名有没有在本地数据库中
-                    print("username already exists!")
-                    continue
-                elif len(new_password) <= 6 or password_chack == []:    # 密码长度不能小于6位数，并且至少有一个字母
-                    print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
-                elif new_mail in get_mail:     # 检查 邮箱有没有被注册
-                    print("'%s' The mailbox is already registered!" % new_mail)
-                elif mail_re != [] or mail_split[-1] not in ["qq.com","gmail.com","163.com"]:   #检查 用户输入的邮箱格式对不对
-                    print("please enter your vaild email")
-                else:
-                    get_user_md5 = hasd_md5(new_name, new_password)
-                    user_name[new_name] = get_user_md5  # 数据库里面的都是dict
-                    user_main[new_name] = new_mail
-                    O = Options_sql()
-                    O.add_sql(new_name,get_user_md5,new_mail)
-                    with open("user_date.txt",'w') as f:
-                        json.dump(user_name,f)   # 重新写入本地数据库
-                    if os.name == "posix":
-                        os.system(r"echo > game_date/{}.txt".format(new_name))   # 在注册成功的同时将用户的Game数据创建了～
-                    else:
-                        open("game_date/{}.txt".format(new_name),'w')   # 如果是windows系统
-                    print("%s Created successfully！" % new_name)  # 创建成功！
-                    with open("date.txt",'a') as d:    # 将创建成功的时间写入'date.txt'
-                        d.write("\n--------------------------------------------------------------------------\n")
-                        d.write("time:{} user'{}'Joined here".format(time.ctime(),new_name))
-                        d.write("\n--------------------------------------------------------------------------\n\n")
-                    with open("game_date/"+new_name+".txt",'w') as f:   # 把数据写入用户自己命名的文本文件中
-                        f.write("----------------------------------------------------------------------------\n")
-                        f.write("Dear'{}',You are welcome to join us!\n".format(new_name))
-                        f.write("Registration time: ")
-                        f.write(time.ctime())
-                        f.write("\n---------------------------------------------------------------------------\n\n\n")
-                    with open("user_mail.txt",'w') as s:     # 把邮箱写入'user_mail.txt'
-                        json.dump(user_main,s)
-                        return "A"     # 这里返回A是为了注册完后可以直接登录
-                        break
+        while True:
+            print("Enter q to exit the registration")
+            new_name = input("New name: ")
+            if new_name == "q" or new_name == "Q":
+                print("Unregistered!")
+                Re = Register()
+                Re.Login()
+                break
+            new_password = getpass.getpass("New Password: ")
+            again_password = getpass.getpass("Again Password:")
+            new_mail = input("Mail: ")
+            password_chack = [i for i in new_password if i.isalpha()]   # 检查密码里面有没有带字母，没有就是[]空list
+            mail_split = new_mail.split("@")      # 将邮箱拆成两半
+            mail_re = re.findall(r'[^a-z0-9]+',mail_split[0])     # 匹配,有数字和字母都ok,其他都不要
+            check_name_list = []
+            check_name = self.cursor.execute("SELECT name FROM user WHERE name='{}';".format(new_name))
+            for names in check_name:
+                check_name_list.append(names)
+            check_mail_list = []
+            check_mail = self.cursor.execute("SELECT mail FROM user WHERE mail='{}';".format(new_mail))
+            for mails in check_mail:
+                check_mail_list.append(mails)
+            if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:  # 用户名中不能有空格
+                print("user name not have strip")
+            elif new_password != again_password:    # 判断两次的密码是否相同
+                print("Twice the password is not the same, please re-enter!")
+                continue
+            elif check_name_list != []:    # 检查 新的用户名有没有在本地数据库中
+                print("username '{}' already exists!".format(new_name))
+                continue
+            elif len(new_password) <= 6 or password_chack == []:    # 密码长度不能小于6位数，并且至少有一个字母
+                print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
+            elif check_mail_list != []:     # 检查 邮箱有没有被注册
+                print("'%s' The mailbox is already registered!" % new_mail)
+            elif mail_re != [] or mail_split[-1] not in ["qq.com","gmail.com","163.com"]:   #检查 用户输入的邮箱格式对不对
+                print("please enter your vaild email")
+            else:
+                get_user_md5 = hasd_md5(new_name, new_password)
+                O = Options_sql()
+                O.add_sql(new_name,get_user_md5,new_mail)
+                print("%s Created successfully！" % new_name)  # 创建成功！
+                return "A"     # 这里返回A是为了注册完后可以直接登录
+                break
+
     # 找回密码
     def Find_password(self):
         print("------------------------")
         print("| ～Find the password～ |")
         print("------------------------")
-        with open("user_mail.txt",'r') as f:
-            user_mail = json.load(f)
-        with open("user_date.txt",'r') as d:
-            user_name = json.load(d)
-        with open("root_mail.txt",'r') as rm:
-            root_mail = json.load(rm)
-        with open("administrator.txt",'r') as r:
-            roots = json.load(r)
-            while True:
-                name = input("user name: ")
-                mail = input("Mail: ")
-                if name in roots and mail == root_mail[name]:
-                    while True:
-                        New_password = getpass.getpass("New Password: ")
-                        again_password = getpass.getpass("Again Password: ")
-                        get_new_md5 = hasd_md5(name, New_password)     # 得到新的md5值
-                        if New_password == again_password:
-                            user_name[name] = get_new_md5
-                            print("Successfully modified！")
-                            with open("user_date.txt",'w') as n:     # 将新的数据写入数据库
-                                json.dump(user_name,n)
-                            with open("administrator.txt",'w') as rs:
-                                json.dump(user_name,rs)
-                                break
-                        else:
-                            print("The password is not the same twice!")
-                    break
-                elif name in user_name and mail == user_mail[name]:     # 判断用户名和邮箱和数据库的合不合
-                    while True:
-                        New_password = getpass.getpass("New Password: ")
-                        again_password = getpass.getpass("Again Password: ")
-                        get_new_md5 = hasd_md5(name, New_password)     # 得到新的md5值
-                        if New_password == again_password:
-                            user_name[name] = get_new_md5
-                            print("Successfully modified！")
-                            with open("user_date.txt",'w') as n:     # 将新的数据写入数据库
-                                json.dump(user_name,n)
-                                break
-                        else:
-                            print("The password is not the same twice!")
+        while True:
+            name = input("user name: ")
+            mail = input("Mail: ")
+            name_mail_date = []
+            get_name_mail = "SELECT name,mail FROM user WHERE name='{}'".format(name)
+            for lc in self.cursor.execute(get_name_mail):
+                name_mail_date.append(lc)
+            check_name_list = []
+            check_name = self.cursor.execute("SELECT name FROM user WHERE name='{}';".format(name))
+            for names in check_name:
+                check_name_list.append(names)
+            print(name_mail_date)
+            print(check_name_list)
+            if check_name_list == []:    # 检查 新的用户名有没有在本地数据库中
+                print("username '{}' already exists!".format(name))
+                continue
+            elif name == name_mail_date[0][0] and mail == name_mail_date[0][1]:
+                New_password = getpass.getpass("New Password: ")
+                again_password = getpass.getpass("Again Password: ")
+                get_new_md5 = hasd_md5(name, New_password)     # 得到新的md5值
+                password_chack = [i for i in New_password if i.isalpha()]   # 检查密码里面有没有带字母，没有就是[]空list
+                if New_password != again_password:    # 判断两次的密码是否相同
+                    print("Twice the password is not the same, please re-enter!")
+                    continue
+                elif len(New_password) <= 6 or password_chack == []:    # 密码长度不能小于6位数，并且至少有一个字母
+                    print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
+                    continue
+                elif New_password == again_password:
+                    O = Options_sql()
+                    O.find_passworld(name,get_new_md5)
+                    print("Successfully modified！")
                     break
                 else:
-                    print("User name or mailbox error")
+                    print("The password is not the same twice!")
+            else:
+                print("User name %s does not exist or mailbox error" % (name))
 
     # 主函数，登录
     def Login(self):
@@ -410,6 +390,7 @@ class Register:
                         print("Find the password")
                         Ref = Register()
                         Ref.Find_password()
+                        break
                     else:
                         continue
 # 游戏
@@ -627,23 +608,10 @@ class Game_date:
 
 # 除了超级管理员(root)以外的管理员
 def must_root(name):
-    print(name)
-    with open("user_date.txt",'r') as f:
-        root_user = json.load(f)
-    with open("user_mail.txt",'r') as m:
-        root_mail = json.load(m)
-    with open("administrator.txt",'r') as f1:
-        root_user2 = json.load(f1)
+    connect_sql = sqlite3.connect("guess_number.db")
+    cursor = connect_sql.cursor()
     print("Admin login is only one chance! Account or password error is directly out")
     while True:
-        with open("user_date.txt",'r') as f:
-            root_user = json.load(f)
-        with open("user_mail.txt",'r') as m:
-            root_mail = json.load(m)
-        with open("administrator.txt",'r') as f1:
-            root_user2 = json.load(f1)
-        with open("root.txt",'r') as r:
-            roots = json.load(r)
         print("Dear administrator'{}',The menu is as follows:".format(name))
         print("--------------------------")
         print("| 1.delete users         |")
@@ -653,54 +621,56 @@ def must_root(name):
         print("--------------------------")
         user_selet = input(">>> ")
         if user_selet == "1":
+            print("暂未开发....(其实是不知道怎么办了.....)")
+            stop()
+            continue
+            admin_id = []
+            not_list = []
+            for ids in cursor.execute("SELECT user_id FROM administrator"):
+                admin_id.append(ids[0])
             print("Please enter the user name to be deleted")
             user = input(">>> ")
-            if user == name:
-                print("Warning! You can not delete yourself！")
-                stop()
-            elif user in root_user2 or user in roots:
-                print("Permission is not enough! You can not delete the administrator'{}'".format(user))
-                stop()
-            elif user in root_user:
-                try:
-                    root_user.pop(user)
-                    root_mail.pop(user)
-                except KeyError:
-                    pass
-                if os.name == "posix":  # 如果是Linux系统就直接用 'rm' 删除
-                    os.system("rm game_date/{}".format(user + ".txt"))
-                else:  # 如果是windows系统就用 'os.remove' 删除
-                    os.remove("game_date/{}".format(user + ".txt"))
-                print("'{}' successfully deleted！".format(user))
-                with open("user_date.txt", 'w') as f1:
-                    json.dump(root_user, f1)
-                with open("user_mail.txt", 'w') as f2:
-                    json.dump(root_mail, f2)
-                with open("root_date/{}".format(name+".txt"),'a') as r:
-                    r.write("\n\n-------------------------------\n")
-                    r.write("Time:{} Deleted user'{}'".format(time.ctime(),user))
-                    r.write("\n-------------------------------\n")
-                stop()
-            else:
-                print("Sorry, no users found{}".format(user))
-                stop()
+
+            # user_name_select = "SELECT user_id FROM administrator WHERE user_id=(SELECT id FROM user WHERE name='{}');".format(user)
+            # for i in [i[0] for i in cursor.execute(user_name_select)]:
+            #     not_list.append(i)
+            # print(admin_id,not_list)
+            # if user == name:
+            #     print("Warning! You can not delete yourself！")
+            #     stop()
+            # elif not_list[0] in admin_id:
+            #     print("Permission is not enough! You can not delete the administrator'{}'".format(user))
+            #     stop()
+            # elif not_list[0] not in admin_id:
+            #     print("!!!")
+            #     # O = Options_sql()
+            #     # O.admin_pop_sql(user)
+            #     # stop()
+            # else:
+            #     print("Sorry, no users found {}".format(user))
+            #     stop()
         elif user_selet == "2":
-            for name in root_user:    # 全部的用户名都在"user_date.txt"中
-                if name in roots:
-                    print("username:{}\tpermissions'{}'".format(name, "Super Administrator"))
-                elif name in root_user2 and name not in roots: # 管理员的用户名在"root.txt"中
-                    print("username:{}\tpermissions'{}'".format(name, "Administrator"))
+            admin_id = []
+            for aid in cursor.execute("SELECT user_id FROM administrator;"):
+                admin_id.append(aid[0])
+            get_name_sql = "SELECT id,name FROM user;"
+            for name in cursor.execute(get_name_sql):
+                if name[0] == 1:
+                    print("username:{}\tpermissions'{}'".format(name[1],"Super Administrator"))
+                elif name[0] in admin_id:
+                    print("username:{}\tpermissions'{}'".format(name[1], "Administrator"))
                 else:
-                    print("username:{}\tpermissions'{}".format(name, "Players"))
+                    if name[0] not in admin_id:
+                        print("username:{}\tpermissions'{}'".format(name[1], "Players"))
             stop()
         elif user_selet == "3":
             print("Not yet developed！")
             stop()
         elif user_selet == "4":
-            print("Administrator{},Quits!".format(name))
+            print("Administrator *{}*,Quits!".format(name[1]))
             break
         else:
-            print("sorry, we do not have that{}".format(user_selet))
+            print("sorry, we do not have that '{}'".format(name))
             stop()
 
 def stop():
@@ -713,236 +683,174 @@ def stop():
 
 # 管理员登录
 def Root():
+    connect_sql = sqlite3.connect('guess_number.db')
+    cursor = connect_sql.cursor()
     print("--------------------------")
     print("|  ~Administrator Login~ |")
     print("--------------------------")
-    with open("user_date.txt",'r') as f:
-        root_user = json.load(f)
-    with open("user_mail.txt",'r') as m:
-        root_mail = json.load(m)
-    with open("administrator.txt",'r') as f1:
-        root_user2 = json.load(f1)
-    with open("root_mail.txt",'r') as m1:
-        root_mail2 = json.load(m1)
-    with open("root.txt",'r') as r:
-        roots = json.load(r)
+    first_name = []
+    get_name_one = cursor.execute('SELECT * FROM user WHERE id=1')
+    for name in get_name_one:
+        first_name.append(name)
     print("Super administrator login is only one chance! Account or password error is directly out")
     root = input("account number: ")
     password = getpass.getpass("Password: ")
     mail = input("Mail: ")
     root_md5 = hasd_md5(root,password)
     try:
-        if root in roots and mail == root_mail2[root] and root_md5 == roots[root]:
-            print("login successful! Welcome! Super administrator:{}".format(root))
-            while True:
-                with open("user_date.txt", 'r') as f:
-                    root_user = json.load(f)
-                with open("user_mail.txt", 'r') as m:
-                    root_mail = json.load(m)
-                with open("root.txt", 'r') as f1:
-                    root_user2 = json.load(f1)
-                with open("root_mail.txt", 'r') as m1:
-                    root_mail2 = json.load(m1)
-                with open("administrator.txt",'r') as ad:
-                    ads = json.load(ad)
-                print("Dear administrator'{}',The menu is as follows".format(root))
-                print("----------------------------------")
-                print("| 1.delete users                 |")
-                print("| 2.Create a new administrator   |")
-                print("| 3.View all users               |")
-                print("| 4.View user registration       |")
-                print("| 5.sign out                     |")
-                print("----------------------------------")
-                user_selet = input(">>> ")
-                if user_selet == "1":
-                    print("Please enter the user name to be deleted")
+        get_admin_id = []
+        admin_date = []
+        administrator_id = "SELECT user_id FROM administrator WHERE user_id=(SELECT id FROM user WHERE name='{}');".format(root)
+        for admin_id in cursor.execute(administrator_id):
+            get_admin_id.append(admin_id[0])
+        if get_admin_id == []:
+            pass
+        else:
+            get_admin_date = 'SELECT name,password,mail FROM user WHERE id={};'.format(get_admin_id[0])
+            for x in cursor.execute(get_admin_date):
+                admin_date.append(x)
+    except IndexError:
+        pass
+
+    if root == first_name[0][1] and root_md5 == first_name[0][2] and mail == first_name[0][3]:
+        print("login successful! Welcome! Super administrator:{}".format(root))
+        while True:
+            print("Dear administrator'{}',The menu is as follows".format(root))
+            print("----------------------------------")
+            print("| 1.delete users                 |")
+            print("| 2.Create a new administrator   |")
+            print("| 3.View all users               |")
+            print("| 4.View user registration       |")
+            print("| 5.View user login exit         |")
+            print("| 6.sign out                     |")
+            print("----------------------------------")
+            user_selet = input(">>> ")
+            if user_selet == "1":
+                print("Please enter the user name to be deleted")
+                user = input(">>> ")
+                first_id = []
+                name = []
+                get_user_total_date = "SELECT name FROM user WHERE id=1;"
+                for dates in cursor.execute(get_user_total_date):
+                    first_id.append(dates[0])
+                get_name = "SELECT name FROM user WHERE name='{}'".format(user)
+                for n in cursor.execute(get_name):
+                    name.append(n[0])
+                if user == first_id[0]:
+                    print("caveat! You can not delete yourself!")
+                    stop()
+                elif name != []:
+                    O = Options_sql()
+                    O.root_pop_sql(user)
+                    print("'{}' successfully deleted！".format(user))
+                    stop()
+                else:
+                    print("Sorry, no users found '{}'".format(user))
+                    stop()
+            elif user_selet == "2":
+                while True:
+                    print("Enter q to exit the registration")
+                    # get_mail = [i for i in root_main.values()]  # 得到邮箱
+                    # get_user_mail = [x for x in user_mail.values()]
+                    new_name = input("root name: ")
+                    if new_name == "q" or new_name == "Q":
+                        print("Unregistered!")
+                        stop()
+                        break
+                    new_password = getpass.getpass("root Password: ")
+                    again_password = getpass.getpass("Again Password:")
+                    root_mails = input("Mail: ")
+                    password_chack = [i for i in new_password if i.isalpha()]  # 检查密码里面有没有带字母，没有就是[]空list
+                    mail_split = root_mails.split("@")  # 将邮箱拆成两半
+                    mail_re = re.findall(r'[^a-z0-9]+', mail_split[0])  # 匹配,有数字和字母都ok,其他都不要
+                    check_name_list = []
+                    check_name = cursor.execute("SELECT name FROM user WHERE name='{}';".format(new_name))
+                    for names in check_name:
+                        check_name_list.append(names)
+                    check_mail_list = []
+                    check_mail = cursor.execute("SELECT mail FROM user WHERE mail='{}';".format(root_mails))
+                    for mails in check_mail:
+                        check_mail_list.append(mails)
+                    if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:
+                        print("user name not have strip")
+                    elif new_password != again_password:  # 判断两次的密码是否相同
+                        print("Twice the password is not the same, please re-enter!")
+                        continue
+                    elif check_name_list != []:  # 检查 新的用户名有没有在本地数据库中
+                        print("username '{}' already exists！".format(new_name))
+                        continue
+                    elif len(new_password) <= 6 or password_chack == []:  # 密码长度不能小于6位数，并且至少有一个字母
+                        print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
+                    elif check_mail_list != []:  # 检查 邮箱有没有被注册
+                        print("'%s' The mailbox is already registered！" % root_mails)
+                    elif mail_re != [] or mail_split[-1] not in ["qq.com", "gmail.com","163.com"]:  # 检查 用户输入的邮箱格式
+                        print("please enter your vaild email")
+                    else:
+                        get_user_md5 = hasd_md5(new_name, new_password)
+                        print("%s Created successfully！" % new_name)
+                        O = Options_sql()
+                        O.add_admin(new_name,get_user_md5,root_mails)
+                        break
+            elif user_selet == "3":
+                    print("-------------------------------------")
+                    print("| 1.View the user name              |")
+                    print("| 2.View the user name and mailbox  |")
+                    print("-------------------------------------")
                     user = input(">>> ")
-                    if user == "root":
-                        print("caveat! You can not delete yourself!")
+                    if user == "1":
+                        admin_id = []
+                        for aid in cursor.execute("SELECT user_id FROM administrator;"):
+                            admin_id.append(aid[0])
+                        get_name_sql = "SELECT id,name FROM user;"
+                        for name in cursor.execute(get_name_sql):
+                            if name[0] == 1:
+                                print("username:{}\tpermissions'{}'".format(name[1],"Super Administrator"))
+                            elif name[0] in admin_id:
+                                print("username:{}\tpermissions'{}'".format(name[1], "Administrator"))
+                            else:
+                                if name[0] not in admin_id:
+                                    print("username:{}\tpermissions'{}'".format(name[1], "Players"))
                         stop()
-                    elif user in root_user and user not in ads:
-                        # 删除文本文件中的数据pop()
-                        try:
-                            root_user.pop(user)
-                            root_mail.pop(user)
-                        except KeyError:
-                            pass
-                        # 删除在game_date和root_date中的用户文件
-                        if os.name == "posix":      # 如果是Linux系统就直接用 'rm' 删除
-                            os.system("rm game_date/{}".format(user+".txt"))
-                        else:                       # 如果是windows系统就用 'os.remove' 删除
-                            os.remove("game_date/{}".format(user+".txt"))
-                        # 把删除掉的数据重新写入
-                        with open("user_date.txt",'w') as f1:
-                            json.dump(root_user,f1)
-                        with open("user_mail.txt",'w') as f2:
-                            json.dump(root_mail,f2)
-                        with open("root_date/root.txt",'a') as f3:
-                            f3.write("\n\n-------------------------------------------------------------------\n")
-                            f3.write("time:{}，Deleted user'{}'".format(time.ctime(),user))
-                            f3.write("\n-------------------------------------------------------------------\n")
-                        print("'{}' successfully deleted！".format(user))
-                        stop()
-                    elif user in ads:
-                        try:
-                            root_user.pop(user)
-                            ads.pop(user)
-                            root_mail2.pop(user)
-                        except KeyError:
-                            pass
-                        if os.name == "posix":
-                            os.system("rm game_date/{}".format(user+".txt"))
-                            os.system("rm root_date/{}".format(user+".txt"))
-                        else:
-                            os.remove("game_date/{}".format(user+".txt"))
-                            os.remove("root_date/{}".format(user+".txt"))
-                        with open("user_date.txt",'w') as f1:
-                            json.dump(root_user,f1)
-                        with open("administrator.txt",'w') as f3:
-                            json.dump(root_user2,f3)
-                        with open("root_mail.txt",'w') as f4:
-                            json.dump(root_mail2,f4)
-                        with open("root_date/{}".format(root+".txt"), 'a') as r:
-                            r.write("\n\n-------------------------------\n")
-                            r.write("time:{}，Deleted user'{}'".format(time.ctime(), user))
-                            r.write("\n-------------------------------\n")
-                        print("'{}' successfully deleted！".format(user))
+                    elif user == "2":
+                        admin_id = []
+                        for aid in cursor.execute("SELECT user_id FROM administrator;"):
+                            admin_id.append(aid[0])
+                        get_name_sql = "SELECT id,name,mail FROM user;"
+                        for name in cursor.execute(get_name_sql):
+                            if name[0] == 1:
+                                print("username:{}\tmail:{}\tpermissions'{}'".format(name[1], name[2], "Super Administrator"))
+                            elif name[0] in admin_id:
+                                print("username:{}\tmail:{}\tpermissions'{}'".format(name[1], name[2], "Administrator"))
+                            else:
+                                if name[0] not in admin_id:
+                                    print("username:{}\tmail:{}\tpermissions'{}'".format(name[1], name[2], "Players"))
                         stop()
                     else:
-                        print("Sorry, no users found'{}'".format(user))
+                        print("sorry, we do not have that{}".format(user))
                         stop()
-                elif user_selet == "2":
-                    with open("administrator.txt", 'r') as u:  # 获取本地文本文件里的用户数据(用户名和密码)
-                        root_name = json.load(u)
-                    with open("root_mail.txt",'r') as m:  # 同上，获取本地用户的用户名和邮箱(两个都是dict)
-                        root_main = json.load(m)
-                    with open("user_date.txt",'r') as f:
-                        user_name = json.load(f)
-                    with open("user_mail.txt",'r') as f:
-                        user_mail = json.load(f)
-                    while True:
-                        print("Enter q to exit the registration")
-                        # get_mail = [i for i in root_main.values()]  # 得到邮箱
-                        get_user_mail = [x for x in user_mail.values()]
-                        new_name = input("root name: ")
-                        if new_name == "q" or new_name == "Q":
-                            print("Unregistered!")
-                            stop()
-                            break
-                        new_password = getpass.getpass("root Password: ")
-                        again_password = getpass.getpass("Again Password:")
-                        root_mails = input("Mail: ")
-                        password_chack = [i for i in new_password if i.isalpha()]  # 检查密码里面有没有带字母，没有就是[]空list
-                        mail_split = root_mails.split("@")  # 将邮箱拆成两半
-                        mail_re = re.findall(r'[^a-z0-9]+', mail_split[0])  # 匹配,有数字和字母都ok,其他都不要
-                        if len(new_name.split()) != 1 or (new_name.strip() == new_name) == False:
-                            print("user name not have strip")
-                        elif new_password != again_password:  # 判断两次的密码是否相同
-                            print("Twice the password is not the same, please re-enter!")
-                            continue
-                        elif new_name in root_name and new_name in user_name:  # 检查 新的用户名有没有在本地数据库中
-                            print("username already exists！")
-                            continue
-                        elif len(new_password) <= 6 or password_chack == []:  # 密码长度不能小于6位数，并且至少有一个字母
-                            print("Password is too weak. Please enter at least 6 digits and at least 1 letter")
-                        elif root_mails in get_user_mail:  # 检查 邮箱有没有被注册
-                            print("'%s' The mailbox is already registered！" % root_mails)
-                        elif mail_re != [] or mail_split[-1] not in ["qq.com", "gmail.com","163.com"]:  # 检查 用户输入的邮箱格式
-                            print("please enter your vaild email")
-                        else:
-                            get_user_md5 = hasd_md5(new_name, new_password)
-                            root_name[new_name] = get_user_md5
-                            root_user[new_name] = get_user_md5  # 数据库里面的都是dict
-                            root_main[new_name] = root_mails
-                            with open("administrator.txt", 'w') as f:
-                                json.dump(root_name, f)  # 重新写入本地数据库
-                            os.system(r"echo > root_date/{}.txt".format(new_name))  # 在注册成功的同时将用户的Game数据创建了～
-                            print("%s Created successfully！" % new_name)
-                            with open("root_date/{}".format(root+ ".txt"), 'a') as r:
-                                r.write("\n\n-------------------------------\n")
-                                r.write("Time:{} Created an administrator'{}'".format(time.ctime(), new_name))
-                                r.write("\n-------------------------------\n")
-                            with open("root_date/" + new_name + ".txt", 'w') as f:
-                                f.write("----------------------------------------------------------------------------\n")
-                                f.write("Dear administrator'{}',You are welcome to join us!\n".format(new_name))
-                                f.write("Created time:")
-                                f.write(time.ctime())
-                                f.write("\n---------------------------------------------------------------------------\n\n\n")
-                            with open("root_mail.txt", 'w') as s:
-                                json.dump(root_main, s)
-                            with open("user_date.txt",'w') as f:
-                                json.dump(root_user,f)
-                            with open("game_date/" + new_name + ".txt", 'w') as f:
-                                f.write("----------------------------------------------------------------------------\n")
-                                f.write("Dear'{}',You are welcome to join us!\n".format(new_name))
-                                f.write("Created time: ")
-                                f.write(time.ctime())
-                                f.write("\nYou have administrator privileges")
-                                f.write("\n---------------------------------------------------------------------------\n\n\n")
-                                break
-                elif user_selet == "3":
-                    with open("user_mail.txt", 'r') as m:
-                        mails = json.load(m)
-                    with open("root.txt", 'r') as r:
-                        spuer = json.load(r)
-                    with open("root_mail.txt", 'r') as rm:
-                        spuer_mail = json.load(rm)
-                    with open("administrator.txt",'r') as admin:
-                        admins = json.load(admin)
-                    with open("user_date.txt",'r') as user_date:
-                        user_dates = json.load(user_date)
-                        print("-------------------------------------")
-                        print("| 1.View the user name              |")
-                        print("| 2.View the user name and mailbox  |")
-                        print("-------------------------------------")
-                        user = input(">>> ")
-                        if user == "1":
-                            for name in user_dates:
-                                if name in spuer and name not in admins:
-                                    print("username:{}\tpermissions'{}'".format(name,"Super Administrator"))
-                                elif name in admins and name not in spuer:
-                                    print("username:{}\tpermissions'{}'".format(name, "Administrator"))
-                                else:
-                                    print("username:{}\tpermissions'{}'".format(name, "Players"))
-                            stop()
-                        elif user == "2":
-                            a = [i for i in spuer.keys()]
-                            b = [i for i in admins.keys()]
-                            # 因为root.txt文件里没有管理员的邮箱，所以要吧root_mail.txt里面的邮箱添加到root.txt中(mails)
-                            for i in zip(spuer_mail.keys(), spuer_mail.values()):
-                                mails[i[0]] = i[1]
-                            for mail in zip(mails.keys(), mails.values()):
-                                if mail[0] in a:
-                                    print("username:{}\tmail:{}\tpermissions'{}'".format(mail[0], mail[1], "Super Administrator"))
-                                elif mail[0] in b:
-                                    print("username:{}\tmail:{}\tpermissions'{}'".format(mail[0], mail[1], "Administrator"))
-                                else:
-                                    print("username:{}\tmail:{}\tpermissions'{}'".format(mail[0], mail[1], "Players"))
-                            stop()
-                        else:
-                            print("sorry, we do not have that{}".format(user))
-                            stop()
-                elif user_selet == "4":
-                    with open("date.txt",'r') as date:
-                        if os.name == "posix":
-                            os.system("gedit date.txt")
-                        else:
-                            os.system("date.txt")
-                        stop()
-                elif user_selet == "5":
-                    print("{} Quits！".format(root))
-                    break
-                else:
-                    print("Sorry, no options{}".format(user_selet))
-                    stop()
-        elif mail != root_mail2[root]:
-            print("Mailbox error！")
-        elif root in root_user2 and mail == root_mail2[root] and root_md5 == root_user2[root] and root not in roots:
-            print("administrator'{}',Welcome！".format(root))
-            must_root(root)
-        else:
-            print("The administrator account or password is incorrect")
-    except KeyError:
+            elif user_selet == "4":
+                for dates in cursor.execute("SELECT name,`time` FROM user WHERE id!=1"):
+                    times = dates[1].split("-")
+                    times_add = times[0]+" year "+times[1]+" month "+times[2]+" day "+times[3]+":"+times[4]+":"+times[5]
+                    print("user: *{}*\ttime:{} Join to here!,".format(dates[0],times_add))
+                stop()
+            elif user_selet == "5":
+                # for le in cursor.execute("SELECT ")
+                print("Sorry~~暂未开发!")
+            elif user_selet == "6":
+                print("{} Quits！".format(root))
+                break
+            else:
+                print("Sorry, no options{}".format(user_selet))
+                stop()
+    elif root == first_name[0][1] and root_md5 == first_name[0][2] and mail != first_name[0][3]:
+        print("Mailbox error！")
+    elif root == admin_date[0][0] and root_md5 == admin_date[0][1] and mail == admin_date[0][2]:
+        print("administrator'{}',Welcome！".format(root))
+        must_root(root)
+    elif root == first_name[0][1] and root_md5 != first_name[0][2] or root != first_name[0][1] and root_md5 == first_name[0][2]:
+        print("The administrator account or password is incorrect")
+    else:
         print("{}，You are not an administrator！".format(root))
 
 # 用户id
@@ -963,19 +871,11 @@ def user_id():
 
 # 实例运行
 if __name__ == "__main__":
-    try:
-        os.mkdir("game_date")
-        open("game_date/root.txt",'w')
-        os.mkdir("root_date")
-        open("root_date/root.txt",'w')
-    except FileExistsError:
-        pass
     if os.path.exists("guess_number.db"):
         pass
     else:
         sql_db()
     # 首次运行，要设置一个root账户
-    if os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False and os.path.exists("administrytor.txt") == False: # 判断需要的文件是否都存在
         print("You are using the first time, please enter the root account and password")
         while True:
             name = input("root name: ")
@@ -991,21 +891,7 @@ if __name__ == "__main__":
             elif mail_re != [] or mail_split[-1] not in ["qq.com", "gmail.com", "163.com"]:  # 检查 用户输入的邮箱格式
                 print("please enter your vaild email")
             else:
-                name_pass = {}
-                name_mail = {}
                 get_md5 = hasd_md5(name,password)
-                name_pass[name] = get_md5
-                name_mail[name] = mail
-                re_date = (
-                           ("root.txt",name_pass),
-                           ("root_mail.txt",name_mail))
-                for i in re_date:
-                    if os.path.exists(i[0]):
-                        pass
-                    else:
-                        with open(i[0],'w') as rd:
-                            json.dump(i[1],rd)
-                    open("date.txt",'w')
                 admins = {}
                 O = Options_sql()
                 connect_sql = sqlite3.connect("guess_number.db")
@@ -1014,22 +900,18 @@ if __name__ == "__main__":
                 PALYERS_DATA = "INSERT INTO players_data (id,user_id,game_time,second,guess_times,total_input,repetition,mode) VALUES ({},{},'{}',{},{},'{}','{}','{}');".format(1,1,'0000-00-00-00-00',0,0,'','','No')
                 ADMINISTRATOR_DATA = "INSERT INTO administrator (id,user_id,create_time) VALUES ({},{},'{}')".format(1,1,O.get_time())
                 LOGIN_EXIT_TIME_DATA = "INSERT INTO login_exit_time (id,user_id,login_time,exit_time) VALUES (1,1,'0000-00-00-00-00','0000-00-00-00-00')"
+                DEL_USER = "INSERT INTO del_user (id,admin_id,remove_user_name) VALUES (1,1,"")"
                 cursor.execute(FIRST_DATA)
                 cursor.execute(PALYERS_DATA)
                 cursor.execute(ADMINISTRATOR_DATA)
                 cursor.execute(LOGIN_EXIT_TIME_DATA)
+                cursor.execute(DEL_USER)
                 cursor.close()
                 connect_sql.commit()
                 connect_sql.close()
-
-                with open("user_date.txt",'w') as name_pass:
-                    json.dump(admins,name_pass)
-                with open("user_mail.txt",'w') as name_mail:
-                    json.dump(admins,name_mail)
-                with open("administrator.txt",'w') as admin:
-                    json.dump(admins,admin)
                 break
-    if os.path.exists("administrytor.txt") == False and os.path.exists("user_date.txt") == False and os.path.exists("user_mail.txt") == False and os.path.exists("root.txt") == False and os.path.exists("root_mail.txt") == False:
+
+    if os.path.exists("guess_number.db") == False:
         print("File is missing, please re-run!")
         pass
     else:
