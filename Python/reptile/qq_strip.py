@@ -24,11 +24,11 @@ else:
 		str_qiepian = regs.text[10:-3]
 		try:
 			js = json.loads(str_qiepian)['data']['commentList']
-		except json.decoder.JSONDecodeError:
-			print("请更换url地址，地址中的qzonetoken验证和g_tk有变")
-			break
 		except KeyError:
 			print("请更换cookie!")
+			break
+		except json.decoder.JSONDecodeError:
+			print("请更换url地址，地址中的qzonetoken验证和g_tk有变")
 			break
 		if js == []:
 			print("Over! 共计 {} 页".format(json.loads(str_qiepian)['data']['total']))
