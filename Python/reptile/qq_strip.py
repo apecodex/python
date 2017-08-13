@@ -12,19 +12,29 @@ header = {
 'Cookie': cookie}
 proxies = {'http':'http://27.185.194.55:8118'}
 times = 0
-while True:
-	print("第 {} 页".format(((times//10)+1)))
-	print("----------------------------------------")
-	url = "https://h5.qzone.qq.com/proxy/domain/m.qzone.qq.com/cgi-bin/new/get_msgb?uin=1473018671&hostUin=1473018671&num=10&start={}&hostword=0&essence=1&s={}&iNotice=0&inCharset=utf-8&outCharset=utf-8&format=jsonp&ref=qzone&g_tk=159637896&qzonetoken=2a26403b960220332f267c6736eec1e4053e1f6eb5791eb2fe314429eb084741d2f4b70466ac0e7f1c".format(str(times),numpy.random.random())
-	# url地址要自己去开发者工具里面拿~上面的这个是我自己的~复制自己的修改一下就行了~
-	regs = requests.get(url, proxies=proxies, headers=header)
-	str_qiepian = regs.text[10:-3]
-	js = json.loads(str_qiepian)['data']['commentList']
-	if js == []:
-		print("Over! 共计 {} 页".format(json.loads(str_qiepian)['data']['total']))
-		break
-	else:
-		for page in range(len(js)):
-			print("第{}页的第{}条 留言者:{} \t 内容:{}".format((times//10)+1,page+1,js[page]['nickname'],js[page]['ubbContent']))
-	times+=10
-	time.sleep(numpy.random.random())
+if cookie == "":
+	print("请输入cookie!")
+else:
+	while True:
+		print("第 {} 页".format(((times//10)+1)))
+		print("----------------------------------------")
+		url = "https://h5.qzone.qq.com/proxy/domain/m.qzone.qq.com/cgi-bin/new/get_msgb?uin=1473018671&hostUin=1473018671&num=10&start={}&hostword=0&essence=1&s={}&iNotice=0&inCharset=utf-8&outCharset=utf-8&format=jsonp&ref=qzone&g_tk=159637896&qzonetoken=2a26403b960220332f267c6736eec1e4053e1f6eb5791eb2fe314429eb084741d2f4b70466ac0e7f1c".format(str(times),numpy.random.random())
+		# url地址要自己去开发者工具里面拿~上面的这个是我自己的~复制自己的修改一下就行了~
+		regs = requests.get(url, proxies=proxies, headers=header)
+		str_qiepian = regs.text[10:-3]
+		try:
+			js = json.loads(str_qiepian)['data']['commentList']
+		except json.decoder.JSONDecodeError:
+			print("请更换url地址，地址中的qzonetoken验证和g_tk有变")
+			break
+		except KeyError:
+			print("请更换cookie!")
+			break
+		if js == []:
+			print("Over! 共计 {} 页".format(json.loads(str_qiepian)['data']['total']))
+			break
+		else:
+			for page in range(len(js)):
+				print("第{}页的第{}条 留言者:{} \t 内容:{}".format((times//10)+1,page+1,js[page]['nickname'],js[page]['ubbContent']))
+		times+=10
+		time.sleep(numpy.random.random())
