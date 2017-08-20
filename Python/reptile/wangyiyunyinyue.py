@@ -28,12 +28,22 @@ class Wangyiyunyinyue():
 			alium VARCHAR NOT NULL,
 			lyric VARCHAR NOT NULL
 		);
+		
+		CREATE TABLE IF NOT EXISTS comment_text(
+			song_id VARCHAR,
+			userId VARCHAR NOT NULL,
+			nickname VARCHAR NOT NULL,
+			comment TEXT NOT NULL,
+			FOREIGN KEY (song_id) REFERENCES song_information (song_id)
+		);
 		"""
-		self.cursor.execute(sql)
+		self.cursor.executescript(sql)
 		self.cursor.close()
 		self.connent_sql.commit()
 		self.connent_sql.close()
-	def sava_sql(self,song_id,singer,song_name,alium,lyric):
+
+	def song_sql(self,song_id,singer,song_name,alium,lyric):
+		self.sql()
 		self.connent_sql = sqlite3.connect("wangyiyunyinyue.db")
 		self.cursor = self.connent_sql.cursor()
 		data = "INSERT INTO song_information (song_id,singer,song_name,alium,lyric) VALUES ('{}','{}','{}','{}','{}')".format(song_id,singer,song_name,alium,lyric)
@@ -42,56 +52,90 @@ class Wangyiyunyinyue():
 		self.connent_sql.commit()
 		self.connent_sql.close()
 
+	def comment_sql(self,song_id,userid,nickname,comment):
+		self.sql()
+		self.connent_sql = sqlite3.connect("wangyiyunyinyue.db")
+		self.cursor = self.connent_sql.cursor()
+		data = "INSERT INTO comment_text (song_id,userId,nickname,comment) VALUES ('{}','{}','{}','{}')".format(song_id,userid,nickname,comment)
+		self.cursor.execute(data)
+		self.cursor.close()
+		self.connent_sql.commit()
+		self.connent_sql.close()
+
 	def check_sql(self):
 		self.connent_sql = sqlite3.connect("wangyiyunyinyue.db")
 		self.cursor = self.connent_sql.cursor()
+		# date = "SELECT comment FROM song_information,comment_text WHERE song_information.song_id==comment_text.song_id"
 		date = "SELECT * FROM song_information"
 		a = self.cursor.execute(date)
+		x = 1
 		for i in a:
-			print(i)
+			print(x,base64.b64decode(str.encode(i[0])).decode("utf-8"))
+			x+=1
+
+	def song(self,id):
+		song_url = "http://music.163.com/song?id={}".format(id)
+		ressong = requests.get(song_url,headers=self.headers,proxies=self.proxies,timeout=10)
+		Bs = BeautifulSoup(ressong.text,'lxml')
+		song_name = Bs.find("div",class_="cnt").find_all("div",class_="tit")
+		singer_and_alium = Bs.find("div",class_="cnt").find_all('p')
+		song_information = []
+		for sn in song_name:
+			song_information.append(base64.b64encode(str.encode(sn.get_text().strip())))
+			for sa in singer_and_alium:
+				song_information.append(base64.b64encode(str.encode(sa.get_text().split("：")[1])))
+		try:
+			print("歌曲:",base64.b64decode(song_information[0]).decode("utf-8"),
+				  "歌手:",base64.b64decode(song_information[1]).decode("utf-8"),
+				  "专辑:",base64.b64decode(song_information[2]).decode("utf-8"))
+			self.song_sql(id,song_information[1].decode("utf-8"),song_information[0].decode("utf-8"),song_information[2].decode("utf-8"),"lyric/{}/{}.lrc".format(self.url.split("=")[-1],id))
+		except KeyError:
+			pass
+		except UnicodeEncodeError:
+			print("GBK")    # windows下 GBK错误~
+
+	def lyric(self,id):
+		lyric_url = "http://music.163.com/api/song/lyric?id={}&lv=-1&kv=-1&tv=-1".format(id)
+		reslyric = requests.get(lyric_url,headers=self.headers,proxies=self.proxies,timeout=10)
+		sp_url = self.url.split("=")[-1]
+		try:
+			English_lyric = reslyric.json()['lrc']['lyric']
+			Chinese_lyric = reslyric.json()['tlyric']['lyric']
+			with open("lyric/{}/{}.lrc".format(sp_url,id),'a') as w:
+				w.write(English_lyric)
+				w.write(Chinese_lyric)
+		except TypeError:
+			pass    # 有些歌词，要么只有英文,要么只有中文，要么连歌词都没有~~~:)
+		except UnicodeEncodeError:    # windows下 GBK错误~
+			pass
+
+	def comment(self,id):
+		comment_url = "http://music.163.com/api/v1/resource/comments/R_SO_4_{}".format(id)
+		rescomment = requests.get(comment_url,headers=self.headers,proxies=self.proxies,timeout=10)
+		for cm in range(len(rescomment.json()['hotComments'])):
+			userid = rescomment.json()['hotComments'][cm]['user']['userId']
+			nickname = rescomment.json()['hotComments'][cm]['user']['nickname']
+			comment = rescomment.json()['hotComments'][cm]['content']
+			self.comment_sql(id,userid,base64.b64encode(str.encode(nickname)).decode("utf-8"),base64.b64encode(str.encode(comment)).decode("utf-8"))
 
 	def main(self):
 		playlist_url = "http://music.163.com/api/v3/playlist/detail?id={}".format(self.url.split("=")[-1])
 		reslist = requests.get(playlist_url,headers=self.headers,proxies=self.proxies,timeout=10)
+		if os.path.exists("lyric") == False:
+			os.mkdir("lyric")
+		if os.path.exists("lyric/{}".format(self.url.split("=")[-1])) == False:
+			os.mkdir("lyric/{}".format(self.url.split("=")[-1]))
 		try:
 			for ids in reslist.json()['playlist']['trackIds']:
-				song_url = "http://music.163.com/song?id={}".format(ids['id'])
-				lyric_url = "http://music.163.com/api/song/lyric?id={}&lv=-1&kv=-1&tv=-1".format(ids['id'])
-				ressong = requests.get(song_url,headers=self.headers,proxies=self.proxies,timeout=10)
-				Bs = BeautifulSoup(ressong.text,'lxml')
-				song_name = Bs.find("div",class_='cnt').find_all("div",class_='tit')
-				singer_and_alium = Bs.find("div",class_='cnt').find_all('p')
-				song_information = []
-				for sn in song_name:    #这里因为存不进去~所以改一下编码~
-					song_information.append(base64.b64encode(str.encode(sn.get_text().strip())))
-					for sa in singer_and_alium:
-						song_information.append(base64.b64encode(str.encode(sa.get_text().split("：")[1])))
 				time.sleep(np.random.random())
-				reslyric = requests.get(lyric_url,headers=self.headers,proxies=self.proxies,timeout=10)
-				try:
-					English_lyric = reslyric.json()['lrc']['lyric']
-					Chinese_lyric = reslyric.json()['tlyric']['lyric']
-					print("歌名:",base64.b64decode(song_information[0]).decode("utf-8"),
-						  "歌手:",base64.b64decode(song_information[1]).decode("utf-8"),
-						  "专辑:",base64.b64decode(song_information[2]).decode("utf-8"))
-					self.sava_sql(ids['id'],song_information[1].decode("utf-8"),song_information[0].decode("utf-8"),song_information[2].decode("utf-8"),"chesi/{}.lrc".format(ids['id']))
-					try:
-						with open("lyric/{}.lrc".format(ids['id']),'a') as w:
-							w.write(English_lyric)
-							w.write(Chinese_lyric)
-					except TypeError:    # 有些歌词，要么只有英文,要么只有中文，要么连歌词都没有~~~:)
-						pass
-				except KeyError:
-					pass
-				except UnicodeEncodeError:
-					pass  # windows下 GBK错误~
+				self.song(ids['id'])
+				self.lyric(ids['id'])
+				self.comment(ids['id'])
 		except KeyError:
 			print("url地址不对~根本就没这个歌单嘛~~\t-_-!!")
 
 if __name__ == "__main__":
-	url = "http://music.163.com/#/playlist?id=864401021"  #填入歌单的url地址~比如:http://music.163.com/#/playlist?id=864401021
-	if os.path.exists("lyric") == False:
-		os.mkdir("lyric")
+	url = ""  # 填入歌单的url地址~比如:http://music.163.com/#/playlist?id=864401021
 	if url == "":
 		print("你url地址还没输呐~~")
 	else:
