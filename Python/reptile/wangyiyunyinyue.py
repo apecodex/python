@@ -5,10 +5,17 @@ import time
 import sqlite3
 import os
 import base64
+import pymysql
 
 class Wangyiyunyinyue():
 
-	def __init__(self,url):
+	def __init__(self,user,password,db,url):
+		self.connent_sql = pymysql.connect(user='{}'.format(user),
+					  password="{}".format(password),
+					  host="127.0.0.1",
+					  port=3306,
+					  db="{}".format(db))
+		self.cursor = self.connent_sql.cursor()
 		self.headers = {
 			"Accept":"*/*",
 			"Connection":"keep-alive",
@@ -18,58 +25,58 @@ class Wangyiyunyinyue():
 		self.url = url
 
 	def sql(self):
-		self.connent_sql = sqlite3.connect("wangyiyunyinyue.db")
-		self.cursor = self.connent_sql.cursor()
 		sql = """
-		CREATE table IF NOT EXISTS song_information(
-			song_id VARCHAR NOT NULL,
-			singer VARCHAR NOT NULL,
-			song_name VARCHAR NOT NULL,
-			alium VARCHAR NOT NULL,
-			lyric VARCHAR NOT NULL
+		CREATE TABLE IF NOT EXISTS song_information(
+			playlist_id VARCHAR(20),
+			song_id VARCHAR(20),
+			singer VARCHAR(200),
+			song_name VARCHAR(200),
+			alium VARCHAR(200),
+			lyric VARCHAR(30)
 		);
-		
+
 		CREATE TABLE IF NOT EXISTS comment_text(
-			song_id VARCHAR,
-			userId VARCHAR NOT NULL,
-			nickname VARCHAR NOT NULL,
-			comment TEXT NOT NULL,
-			FOREIGN KEY (song_id) REFERENCES song_information (song_id)
+			song_id VARCHAR(20),
+			userId VARCHAR(20),
+			nickname VARCHAR(100),
+			comment TEXT
 		);
 		"""
-		self.cursor.executescript(sql)
-		self.cursor.close()
-		self.connent_sql.commit()
-		self.connent_sql.close()
-
-	def song_sql(self,song_id,singer,song_name,alium,lyric):
-		self.sql()
-		self.connent_sql = sqlite3.connect("wangyiyunyinyue.db")
-		self.cursor = self.connent_sql.cursor()
-		data = "INSERT INTO song_information (song_id,singer,song_name,alium,lyric) VALUES ('{}','{}','{}','{}','{}')".format(song_id,singer,song_name,alium,lyric)
+		data = "show tables;"
 		self.cursor.execute(data)
-		self.cursor.close()
+		check = self.cursor.fetchall()
+		if check == ():
+			print("正在创建数据表.....")
+			print("数据表创建成功！！！")
+			print("---------------------------")
+			self.cursor.execute(sql)
+			self.connent_sql.commit()
+		else:
+			pass
+
+	def song_sql(self,playlist_id,song_id,singer,song_name,alium,lyric):
+		data = "INSERT INTO song_information (playlist_id,song_id,singer,song_name,alium,lyric) VALUES ('{}','{}','{}','{}','{}','{}')".format(playlist_id,song_id,singer,song_name,alium,lyric)
+		self.cursor.execute(data)
 		self.connent_sql.commit()
-		self.connent_sql.close()
+
 
 	def comment_sql(self,song_id,userid,nickname,comment):
-		self.sql()
-		self.connent_sql = sqlite3.connect("wangyiyunyinyue.db")
-		self.cursor = self.connent_sql.cursor()
 		data = "INSERT INTO comment_text (song_id,userId,nickname,comment) VALUES ('{}','{}','{}','{}')".format(song_id,userid,nickname,comment)
 		self.cursor.execute(data)
-		self.cursor.close()
 		self.connent_sql.commit()
-		self.connent_sql.close()
 
 	def check_sql(self):
-		self.connent_sql = sqlite3.connect("wangyiyunyinyue.db")
-		self.cursor = self.connent_sql.cursor()
-		# date = "SELECT comment FROM song_information,comment_text WHERE song_information.song_id==comment_text.song_id"
-		date = "SELECT * FROM song_information"
-		a = self.cursor.execute(date)
+
+		date = "SELECT comment_text.comment FROM song_information,comment_text WHERE song_information.song_id=comment_text.song_id and song_information.song_id=3423803"
+		# date = "SELECT * FROM song_information;"
+		self.cursor.execute(date)
+		results = self.cursor.fetchall()
+		# print(a)
 		x = 1
-		for i in a:
+		for i in results:
+			# print(x,i[0],base64.b64decode(str.encode(i[1])).decode("utf-8"),base64.b64decode(str.encode(i[-1])).decode("utf-8"))
+			# print(x,"userid:",base64.b64decode(str.encode(i[2])).decode("utf-8"),"内容:",base64.b64decode(str.encode(i[-1])).decode("utf-8"))
+			# print(x,base64.b64decode(str.encode(i[2])).decode("utf-8"))
 			print(x,base64.b64decode(str.encode(i[0])).decode("utf-8"))
 			x+=1
 
@@ -88,7 +95,7 @@ class Wangyiyunyinyue():
 			print("歌曲:",base64.b64decode(song_information[0]).decode("utf-8"),
 				  "歌手:",base64.b64decode(song_information[1]).decode("utf-8"),
 				  "专辑:",base64.b64decode(song_information[2]).decode("utf-8"))
-			self.song_sql(id,song_information[1].decode("utf-8"),song_information[0].decode("utf-8"),song_information[2].decode("utf-8"),"lyric/{}/{}.lrc".format(self.url.split("=")[-1],id))
+			self.song_sql(self.url.split("=")[-1],id,song_information[1].decode("utf-8"),song_information[0].decode("utf-8"),song_information[2].decode("utf-8"),"lyric/{}/{}.lrc".format(self.url.split("=")[-1],id))
 		except KeyError:
 			pass
 		except UnicodeEncodeError:
@@ -104,6 +111,8 @@ class Wangyiyunyinyue():
 			with open("lyric/{}/{}.lrc".format(sp_url,id),'a') as w:
 				w.write(English_lyric)
 				w.write(Chinese_lyric)
+		except KeyError:   #没有歌词的会报错!
+			pass
 		except TypeError:
 			pass    # 有些歌词，要么只有英文,要么只有中文，要么连歌词都没有~~~:)
 		except UnicodeEncodeError:    # windows下 GBK错误~
@@ -121,23 +130,39 @@ class Wangyiyunyinyue():
 	def main(self):
 		playlist_url = "http://music.163.com/api/v3/playlist/detail?id={}".format(self.url.split("=")[-1])
 		reslist = requests.get(playlist_url,headers=self.headers,proxies=self.proxies,timeout=10)
-		if os.path.exists("lyric") == False:
-			os.mkdir("lyric")
-		if os.path.exists("lyric/{}".format(self.url.split("=")[-1])) == False:
-			os.mkdir("lyric/{}".format(self.url.split("=")[-1]))
-		try:
-			for ids in reslist.json()['playlist']['trackIds']:
-				time.sleep(np.random.random())
-				self.song(ids['id'])
-				self.lyric(ids['id'])
-				self.comment(ids['id'])
-		except KeyError:
-			print("url地址不对~根本就没这个歌单嘛~~\t-_-!!")
+		if reslist.json()['code'] == 404:
+			print("URL 地址不对嘛~ -_-!!")
+		else:
+			self.sql()
+			print("正在检测歌单id '{}' 是否在数据库中......".format(self.url.split("=")[-1]))
+			data = "SELECT playlist_id FROM song_information WHERE playlist_id={} LIMIT 1;".format(self.url.split("=")[-1])
+			self.cursor.execute(data)
+			se = self.cursor.fetchall()
+			if se != ():
+				print("---------------------------")
+				print("这个歌单已经在数据库了~请重新换一个歌单~~")
+			else:
+				if os.path.exists("lyric") == False:
+					os.mkdir("lyric")
+				if os.path.exists("lyric/{}".format(self.url.split("=")[-1])) == False:
+					os.mkdir("lyric/{}".format(self.url.split("=")[-1]))
+				print("开始抓取~~~~")
+				for ids in reslist.json()['playlist']['trackIds']:
+					time.sleep(np.random.random())
+					self.song(ids['id'])
+					self.lyric(ids['id'])
+					self.comment(ids['id'])
 
 if __name__ == "__main__":
-	url = ""  # 填入歌单的url地址~比如:http://music.163.com/#/playlist?id=864401021
+	url=""  # 填入歌单的url地址~比如:http://music.163.com/#/playlist?id=864401021
+	user=""    # MySQL账号 root
+	password=""    # MySQL密码
+	db=""    # 数据库名称
 	if url == "":
 		print("你url地址还没输呐~~")
 	else:
-		w = Wangyiyunyinyue(url)
-		w.main()
+		try:
+			w = Wangyiyunyinyue(user,password,db,url)
+			w.main()
+		except pymysql.err.OperationalError:
+			print("连接失败~请检查数据库(MySQL)账号或密码是否正确~~~")
