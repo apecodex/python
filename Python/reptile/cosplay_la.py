@@ -99,8 +99,25 @@ class CosPlay:
             num += 1
 
     # 用户的关注
-    def userFocusCount(self, userHomeUrl):
-        pass
+    def userFocusCount(self, userHomeUrl, uid):
+        print("开始爬取 {} 的粉丝".format(userHomeUrl))
+        num = 1
+        while True:
+            print("正在爬取第 '{}' 轮粉丝".format(num))
+            postData = {
+                'p': num,
+                'action': 5,
+                'uid': uid
+            }
+            focusPostResponse = json.loads(self.session.post(userHomeUrl + "/user/GetUserFriends", data=postData).text)
+            if focusPostResponse['Data'] == []:
+                print("'{}' 用户的粉丝已完, 共计 '{}' 个".format(userHomeUrl, num))
+                break
+            else:
+                for fs in focusPostResponse['Data']:
+                    focusInformation = self.getUserInformation("http://home.cosplay.la/"+fs['Domain'])
+                    print(focusInformation)
+            num += 1
 
     def main(self):
         pageTotalNum = int(self.getPageTotalNum())
